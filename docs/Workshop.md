@@ -418,3 +418,355 @@ In the context of defining Docker commands in the `dockerCommands` setting, ther
 
 When defining Docker commands in the `dockerCommands` setting, you can use both `ExecCmd` and `Cmd` to perform different actions at different stages of the Docker image lifecycle.
 
+### System Architecture
+
+[![](https://mermaid.ink/img/pako:eNqVk0tPhDAQgP9KU6-QCKirmHhZPSGX5YZ4qHSAhmdKUdfN_neH5y7rxd5mvvmYKU3nQOOaA3VpKlmTkdddVBHSdh9jGr5FNKzrHKABGdH3vhhaCH9maFoztlfYnrGzws6EoeKrQR5aHktyNtW9fkjeg2WAZy9obu45C7poHOyw0sYZlMyUkIpWyf1kBH0F5OfyQz6CkqUinvIt5nEhoFLzGGKaTyQc-_6JvSE-w5c0GO7UPxn-yfDPjO0Y92EhqjxQ-wLINcGj4-25VzbEfGMZY2p-Ca4y126-H9e-penbmr6j6d9o-rea_p2mv9H07zX9h3_41KAlyJIJjnt36L-PqMKnChF1MeSQsK7AxxdVR1RZp-pgX8XUVbIDg3YNZwqeBcPNKdfwhQtVS-omrGgRwpD6434Pa378Bd5oSPk?type=png)](https://mermaid.live/edit#pako:eNqVk0tPhDAQgP9KU6-QCKirmHhZPSGX5YZ4qHSAhmdKUdfN_neH5y7rxd5mvvmYKU3nQOOaA3VpKlmTkdddVBHSdh9jGr5FNKzrHKABGdH3vhhaCH9maFoztlfYnrGzws6EoeKrQR5aHktyNtW9fkjeg2WAZy9obu45C7poHOyw0sYZlMyUkIpWyf1kBH0F5OfyQz6CkqUinvIt5nEhoFLzGGKaTyQc-_6JvSE-w5c0GO7UPxn-yfDPjO0Y92EhqjxQ-wLINcGj4-25VzbEfGMZY2p-Ca4y126-H9e-penbmr6j6d9o-rea_p2mv9H07zX9h3_41KAlyJIJjnt36L-PqMKnChF1MeSQsK7AxxdVR1RZp-pgX8XUVbIDg3YNZwqeBcPNKdfwhQtVS-omrGgRwpD6434Pa378Bd5oSPk)
+
+The system architecture is described in `src/docker-compose.yml`. This is the first interactive step in the workshop. You will first setup a zookeeper cluster with three nodes. Please make a fresh clone of this repository and run
+
+```bash
+git checkout setup-zookeeper
+```
+
+In the freshly cloned workspace.
+
+Follow the instructions below:
+
+#### Setting up a ZooKeeper Cluster
+
+To set up a ZooKeeper cluster using Docker Compose, follow these steps:
+
+1. Open `src/docker-compose.yml`
+2. You should see the following code:
+
+```yaml
+version: "3.5"
+services:
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeper-1:22888:23888;zookeeper-2:32888:33888;zookeeper-3:42888:43888
+  zookeeper-2:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeper-1:22888:23888;zookeeper-2:32888:33888;zookeeper-3:42888:43888
+  zookeeper-3:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: ???
+      ZOOKEEPER_CLIENT_PORT: ???
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: ???
+```
+
+##### Exercise 1
+
+This Docker Compose configuration sets up a ZooKeeper cluster with three nodes: `zookeeper-1`, `zookeeper-2`, and `zookeeper-3`. Let's explain the key elements:
+
+`version: "3.5"`: Specifies the Docker Compose file version.
+
+`services`: Defines the list of services to be created.
+
+`zookeeper-1, zookeeper-2, zookeeper-3`: Each service represents an individual ZooKeeper node. The numbers at the end of the service names (`-1`, `-2`, `-3`) distinguish between the different nodes.
+
+`image: confluentinc/cp-zookeeper:latest`: Specifies the Docker image to be used for the ZooKeeper service. In this case, it uses the latest version of the `confluentinc/cp-zookeeper` image provided by Confluent.
+
+`environment`: Sets environment variables for the ZooKeeper service.
+
+`ZOOKEEPER_SERVER_ID`: Specifies the unique ID for the ZooKeeper node. Each node in the cluster must have a unique ID.
+
+`ZOOKEEPER_CLIENT_PORT`: Defines the port number on which ZooKeeper listens for client connections.
+
+`ZOOKEEPER_TICK_TIME`: Sets the length of a single tick, which is the basic time unit used by ZooKeeper.
+
+`ZOOKEEPER_INIT_LIMIT`: Defines the time (in ticks) that ZooKeeper servers can take to connect and synchronize with each other.
+
+`ZOOKEEPER_SYNC_LIMIT`: Specifies the maximum time (in ticks) that ZooKeeper servers can be out of sync with each other.
+
+`ZOOKEEPER_SERVERS`: Sets the list of ZooKeeper servers in the format `server:id1:host1:port1;server:id2:host2:port2;....` This configuration helps ZooKeeper nodes discover and connect to each other in the cluster.
+
+You need to fill in the ZOOKEEPER_SERVER_ID, ZOOKEEPER_CLIENT_PORT, and ZOOKEEPER_SERVERS environment variables for the zookeeper-3 service to complete the configuration. After filling it in, you can check that the zookeeper cluster is setup appropriately by saving the file, and running:
+
+```bash
+docker-compose up -d
+docker-compose logs -f zookeeper-3
+```
+
+in a terminal window in your clone's `src/` directory that contains the docker-compose.yml.
+
+These commands launch the ZooKeeper containers in the background (-d flag) according to the configuration specified in the `docker-compose.yml` file, and display the logs of the zookeeper node you filled out in the exercise. In the logs you should see no errors and eventually see an info log like following (it may take a few moments):
+
+```shell
+INFO [QuorumPeer[...]]: INFO ... - Accepted socket connection from /<IP_Address>:<Port>
+```
+Congratulations, you've setup your zookeeper cluster. Stop following the logs with (<Cmd|Ctrl> C. You can now tear it down with:
+
+```bash
+docker-compose down
+git reset --hard setup-kafka
+```
+in the terminal and move on to setting up kafka.
+
+#### Setting up a Kafka Cluster
+
+To set up a Kafka cluster using Docker Compose, continue from the previous step and follow these additional steps:
+
+1. Copy the following code below the ZooKeeper services in the 'src/docker-compose.yml' file in the workspace:
+
+```yaml
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-2:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092
+      KAFKA_JMX_PORT: 9998
+  kafka-2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-2:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092
+      KAFKA_JMX_PORT: 9998
+  kafka-3:
+    image: ???
+    depends_on:
+      ???
+    environment:
+      KAFKA_BROKER_ID: ???
+      KAFKA_ZOOKEEPER_CONNECT: ???
+      KAFKA_ADVERTISED_LISTENERS: ???
+      KAFKA_JMX_PORT: 9998
+```
+
+##### Exercise 2
+
+This snippet defines three Kafka services, `kafka-1`, `kafka-2`, and `kafka-3`, within the Docker Compose configuration. Let's break down the key elements:
+
+`kafka-1` and `kafka-2`:
+
+`image: confluentinc/cp-kafka:latest`: Specifies the Docker image to be used for the Kafka service. In this case, it uses the latest version of the confluentinc/cp-kafka image provided by Confluent.
+
+`depends_on`: Specifies the services that this Kafka service depends on. In this case, it depends on `zookeeper-1`, `zookeeper-2`, and `zookeeper-3`, ensuring that the ZooKeeper cluster is started before the Kafka service.
+
+`environment`: Sets environment variables for the Kafka service.
+
+`KAFKA_BROKER_ID`: Specifies the unique ID for the Kafka broker. Each broker in the cluster must have a unique ID.
+
+`KAFKA_ZOOKEEPER_CONNECT`: Defines the ZooKeeper connection string for the Kafka broker. It specifies the addresses of the ZooKeeper nodes that Kafka will connect to for coordination.
+
+`KAFKA_ADVERTISED_LISTENERS`: Specifies the listener configuration for the Kafka broker. In this case, it sets the listener to `PLAINTEXT` protocol and defines the advertised listener address as `kafka-1:9092 or kafka-2:9092`. Clients will use these addresses to connect to the respective Kafka brokers.
+
+`KAFKA_JMX_PORT`: Defines the JMX (Java Management Extensions) port for monitoring and managing the Kafka broker.
+
+`kafka-3`:
+
+Similar to `kafka-1` and `kafka-2`, this section defines the configuration for the `kafka-3` service.
+However, the `image`, `depends_on`, and `environment` variable values are left blank (???) and need to be filled in according to your specific setup.
+To configure the `kafka-3` service correctly, you need to provide the appropriate values for `image`, `depends_on`, `KAFKA_BROKER_ID`, `KAFKA_ZOOKEEPER_CONNECT`, and `KAFKA_ADVERTISED_LISTENERS` based on the values for `kafka-1` and `kafka-2`.
+
+After filling it in, you can check that the kafka cluster is setup appropriately by saving the file, and running:
+
+```bash
+docker-compose up -d
+docker-compose logs -f kafka-3
+```
+
+in a terminal window in your clone's `src/` directory that contains the docker-compose.yml.
+
+These commands launch the ZooKeeper and Kafka containers in the background (-d flag) according to the configuration specified in the `docker-compose.yml` file, and display the logs of the Kafka node you filled out in the exercise. In the logs you should see no errors and eventually see an info log like following (it may take a few moments):
+
+```shell
+INFO [KafkaServer id=<broker_id>] started (kafka.server.KafkaServer)
+```
+Congratulations, you've setup your kafka cluster. Stop following the logs with (<Cmd|Ctrl> C. You can now tear it down with:
+
+```bash
+docker-compose down
+git reset --hard add-other-services
+```
+in the terminal and move on to adding the rest of the docker-compose configuration.
+
+#### Adding the schema-registry, kafka monitor, the game client and server
+
+To set up a the kafka-magic monitor, and the game client and server in the docker-compose:
+
+1. Copy the following code below the kafka services in the 'src/docker-compose.yml' file in the workspace:
+
+```yaml
+schema-registry:
+    image: "confluentinc/cp-schema-registry:6.2.0"
+    hostname: schema-registry
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,???'
+  server:
+    image: "127.0.0.1:${SCALADAYS_WORKSHOP_DOCKER_REGISTRY_HOST_PORT?Cannot find host port}/scaladays-workshop-2023-server:latest"
+    platform: linux/amd64
+    hostname: scaladays-workshop-2023-server
+    restart: always
+    environment:
+      ROOT_LOG_LEVEL : ERROR
+    ports:
+      - "28082:8082"
+      - "28083:8085"
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - schema-registry
+  magic:
+    image: "digitsy/kafka-magic"
+    ports:
+      - "29080:80"
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - schema-registry
+    volumes:
+      - myConfig:/config
+    environment:
+      KMAGIC_ALLOW_TOPIC_DELETE: "true"
+      KMAGIC_ALLOW_SCHEMA_DELETE: "true"
+      KMAGIC_CONFIG_STORE_TYPE: "file"
+      KMAGIC_CONFIG_STORE_CONNECTION: "Data Source=/config/KafkaMagicConfig.db;"
+      KMAGIC_CONFIG_ENCRYPTION_KEY: "ENTER_YOUR_KEY_HERE"
+  client:
+    image: "lipanski/docker-static-website:latest"
+    ports:
+      - 23000:3000
+    depends_on:
+      - server
+    volumes:
+      - ${SCALADAYS_CLIENT_DIST?Cannot find scaladays client distribution}:/home/static
+      - ${SCALADAYS_CLIENT_DIST?Cannot find scaladays client distribution}/httpd.conf:/home/static/dist/httpd.conf
+volumes:
+  myConfig:
+```
+
+##### Exercise 3
+
+Let's examine the above snippet.
+
+`schema-registry`:
+
+`image`: "confluentinc/cp-schema-registry:6.2.0": Specifies the Docker image to be used for the Schema Registry service. In this case, it uses version 6.2.0 of the `confluentinc/cp-schema-registry` image provided by Confluent.
+
+`hostname: schema-registry`: Sets the hostname for the Schema Registry container.
+`depends_on`: Specifies the services that the Schema Registry service depends on. It requires the ZooKeeper cluster (`zookeeper-1`, `zookeeper-2`, `zookeeper-3`) and the Kafka brokers (`kafka-1`, `kafka-2`, `kafka-3`) to be running before starting the Schema Registry service.
+
+`ports`: Maps the container's port 8081 to the host's port 8081, allowing access to the Schema Registry service from the host machine.
+
+`environment`: Sets environment variables for the Schema Registry service.
+
+`SCHEMA_REGISTRY_HOST_NAME`: Specifies the hostname for the Schema Registry service.
+
+`SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS`: Defines the bootstrap servers for the Schema Registry to connect to Kafka. In this case, it provides the addresses of `kafka-1:9092` and `kafka-2:9092`. Replace ??? with the appropriate address for the third Kafka broker.
+
+`server`:
+
+`image: "127.0.0.1:${SCALADAYS_WORKSHOP_DOCKER_REGISTRY_HOST_PORT?Cannot find host port}/scaladays-workshop-2023-server:latest"`: Specifies the Docker image to be used for the server service. The image location is determined using an environment variable `${SCALADAYS_WORKSHOP_DOCKER_REGISTRY_HOST_PORT}` to fetch the host port.
+
+`platform: linux/amd64`: Specifies the platform (architecture) for the server container.
+
+`hostname: scaladays-workshop-2023-server`: Sets the hostname for the server container.
+
+`restart`: always: Configures the container to automatically restart if it stops for any reason.
+
+`environment`: Sets environment variables for the server service.
+
+`ROOT_LOG_LEVEL`: Specifies the log level for the server application. In this case, it is set to `ERROR`.
+
+`ports`: Maps the container's ports 8082 and 8085 to the host's ports 28082 and 28083, respectively, allowing access to the server service from the host machine.
+
+`depends_on`: Specifies the services that the server service depends on. It requires the ZooKeeper cluster, Kafka brokers, and Schema Registry to be running before starting the server service.
+
+`magic`:
+
+`image: "digitsy/kafka-magic"`: Specifies the Docker image to be used for the Magic service. In this case, it uses the `digitsy/kafka-magic` image.
+
+`ports`: Maps the container's port 80 to the host's port 29080, allowing access to the Magic service from the host machine.
+
+`depends_on`: Specifies the services that the Magic service depends on. It requires the ZooKeeper cluster, Kafka brokers, and Schema Registry to be running before starting the Magic service.
+
+`volumes`: Mounts the volume myConfig to the /config directory within the container.
+
+`environment`: Sets environment variables for the Magic service, including configuration options related to topics and schemas.
+
+`client`:
+
+`image: "lipanski/docker-static-website:latest"`: Specifies the Docker image to be used for the client service. In this case, it uses the `lipanski/docker-static-website` image.
+
+`ports`: Maps the container's port 3000 to the host's port 23000, allowing access to the client service from the host machine.
+
+`depends_on`: Specifies that the client service depends on the server service to be running before starting.
+
+`volumes`:
+
+`myConfig`: Defines a named volume called myConfig that can be used for persistent data storage.
+
+
+After filling in the blank for the kafka-3 server, you can check that everything is setup appropriately by saving the file, runnig:
+
+```bash
+docker-compose up -d
+```
+
+in a terminal window in your clone's `src/` directory that contains the docker-compose.yml, opening `http://localhost:29080` in your browser and follow the following steps:
+
+1. Open [Kafka Magic](http://localhost:29080/cluster).
+1. Click Register New.
+1. Enter `Scaladays Workshop` in the `Cluster Name` input.
+1. Enter `kakfa-1:9092,kafka-2:9092,kafka-1:9092` in the `Bootstrap Servers` input.
+1. Click `Schema Registry`.
+1. Enter `http://schema-registry:8081` in the `Schema Registry URL` input.
+1. Toggle `Auto-register schemas` to true.
+1. Click `Verify`. An alert will show success. Close it.
+1. Click Register Connection. Your cluster is registered.
+
+Congratulations, you've setup your infrastructure. You can now tear it down with:
+
+```bash
+docker-compose down
+git reset --hard domain-modeling
+```
+
+And move on to the next step.
+
+
