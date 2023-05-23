@@ -1,22 +1,22 @@
-# Workshop - TicTacToe
+# Scaladays 2023 - TicTacToe
 
 The goal of this workshop is to develop a 2 player real-time strategy game using only Scala 3. In the process of this workshop, you will learn:
 
+* Scala 3
+* Scalajs
 * Functional Domain Modeling
 * Functional Reactive Programming in the style similar to [Elm](https://elm-lang.org/) using [Tyrian](https://github.com/purplekingdomgames/tyrian)
-* Message brokers with Kafka
-* Tagless Final
-* Scala 3
-* ScalaJS
+* Kafka consumers and producers
 * Docker
 * docker-compose
 * sbt-native-packager
 * sbt tasks
-* http4s with WebSockets
+* Tagless Final
+* http4s with websockets
 
 ## Prerequisites
 
-1. A computer with a keyboard, monitor, and wireless internet connection.
+1. A computer with linux newer than 2016, OSX or Windows 10+.
 2. A desktop-compatible docker installation, such as [Docker Desktop](https://www.docker.com/products/docker-desktop/), which is free for open source projects such as this one, or [Rancher Desktop](https://rancherdesktop.io/) running the docker daemon.
 3. [Git](https://git-scm.com/).
 4. Windows only - [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install).
