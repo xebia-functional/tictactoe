@@ -511,7 +511,8 @@ These commands launch the ZooKeeper containers in the background (-d flag) accor
 ```shell
 INFO [QuorumPeer[...]]: INFO ... - Accepted socket connection from /<IP_Address>:<Port>
 ```
-Congratulations, you've setup your zookeeper cluster. Stop following the logs with (<Cmd|Ctrl> C. You can now tear it down with:
+
+Congratulations, you've setup your zookeeper cluster. Stop following the logs with (<Cmd|Ctrl> C). You can now tear it down with:
 
 ```bash
 docker-compose down
