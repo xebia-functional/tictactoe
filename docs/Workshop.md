@@ -601,7 +601,8 @@ These commands launch the ZooKeeper and Kafka containers in the background (-d f
 ```shell
 INFO [KafkaServer id=<broker_id>] started (kafka.server.KafkaServer)
 ```
-Congratulations, you've setup your kafka cluster. Stop following the logs with (<Cmd|Ctrl> C. You can now tear it down with:
+
+Congratulations, you've setup your kafka cluster. Stop following the logs with (<Cmd|Ctrl> C). You can now tear it down with:
 
 ```bash
 docker-compose down
