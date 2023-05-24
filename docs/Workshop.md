@@ -81,7 +81,7 @@ This means that changes in "commonJVM" will affect "server", and changes in "com
 
 #### Intermediate/Advanced SBT concepts and documentation
 
-1. **CrossProject**: A `crossProject` is a project that is built for both the JVM and JavaScript platforms. In this `build.sbt`, `common` is a `crossProject`. [Documentation](https://www.scala-js.org/doc/project/cross-build.html)
+1. **CrossProject**: A `crossProject` is a project that is built for multiple platforms. In our case, the JVM and JavaScript platforms. In this `build.sbt`, `common` is a `crossProject`. [Documentation](https://www.scala-js.org/doc/project/cross-build.html)
 
 2. **ScalaJSPlugin**: This plugin enables the compilation of Scala code to JavaScript. It's used in the `tttClient` project. [Documentation](https://www.scala-js.org/doc/sbt-plugin.html)
 
