@@ -1,4 +1,4 @@
-# Scaladays 2023 - TicTacToe
+# Workshop - TicTacToe
 
 The goal of this workshop is to develop a 2 player real-time strategy game using only Scala 3. In the process of this workshop, you will learn:
 
