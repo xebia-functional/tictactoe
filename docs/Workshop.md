@@ -770,10 +770,27 @@ Congratulations, you've setup your infrastructure. You can now tear it down with
 
 ```bash
 docker-compose down
-git reset --hard domain-modeling
+git reset --hard domain-modeling-1
 ```
 
 And move on to the next step.
+
+#### Functional Domain Modeling - The X's and O's of TicTacToe
+
+Now that we have learned about sbt multiprojects, docker packaging, and the deployment of a full-stack system, we can start thinking about our domain.
+
+There is almost nothing more important to the success of a programming project than a well-defined domain model. Scala 3 is well-suited for domain modeling. The familiar Scala 2 features that make Scala a great language for domain modeling:
+
+* case classes
+* pattern matching
+* static typing
+* type inference
+* traits
+
+all still exist in Scala 3. However, new features, such as opaque types, improved enum types, union types, 
+
+
+
 
 
 #### Creating the game server
