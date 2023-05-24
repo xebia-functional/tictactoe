@@ -518,6 +518,7 @@ Congratulations, you've setup your zookeeper cluster. Stop following the logs wi
 docker-compose down
 git reset --hard setup-kafka
 ```
+
 in the terminal and move on to setting up kafka.
 
 #### Setting up a Kafka Cluster
