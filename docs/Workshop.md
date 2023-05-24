@@ -608,6 +608,7 @@ Congratulations, you've setup your kafka cluster. Stop following the logs with (
 docker-compose down
 git reset --hard add-other-services
 ```
+
 in the terminal and move on to adding the rest of the docker-compose configuration.
 
 #### Adding the schema-registry, kafka monitor, the game client and server
