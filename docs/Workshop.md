@@ -1,18 +1,18 @@
-# Scaladays 2023 - TicTacToe
+# Workshop - TicTacToe
 
 The goal of this workshop is to develop a 2 player real-time strategy game using only Scala 3. In the process of this workshop, you will learn:
 
-* Scala 3
-* Scalajs
 * Functional Domain Modeling
 * Functional Reactive Programming in the style similar to [Elm](https://elm-lang.org/) using [Tyrian](https://github.com/purplekingdomgames/tyrian)
-* Kafka consumers and producers
+* Message brokers with Kafka
+* Tagless Final
+* Scala 3
+* ScalaJS
 * Docker
 * docker-compose
 * sbt-native-packager
 * sbt tasks
-* Tagless Final
-* http4s with websockets
+* http4s with WebSockets
 
 ## Prerequisites
 
