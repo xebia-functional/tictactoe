@@ -774,3 +774,644 @@ git reset --hard domain-modeling
 And move on to the next step.
 
 
+#### Creating the game server
+
+Now that you've established the basic model for your game, we need to
+start talking about how to execute the model and allow two players to
+play it. You could do all of the work on the client side. However,
+that presents limitations. Only two players could play the game at a
+time. Both players would have to be present at the same computer to
+play. All the responsibilities of state management and processing as
+well as the rendering and input handling must be performed on the
+client, mixing the two concerns.
+
+A more flexible solution is to create a web server to handle the
+processing of the domain model. This allows the client to focus on the
+user experience for the players and to offload game processing and
+state management to the server.
+
+The premier scala http library is [http4s](https://http4s.org/).
+
+It provides a typed functional model of http servers, clients, and
+websocket streaming communcations. It is built on libraries like
+[fs2](https://fs2.io/#/), [cats](https://typelevel.org/cats/), and
+[cats-effect](https://typelevel.org/cats-effect/). These libraries
+work together very well, are well-documented, are extremely popular
+(of the 33.8 M indexed artifacts in maven central, cats is #181,
+cats-effect is the 288th most popular library, fs2 is #688,
+http4s-core is #2271), used at industrial scale by companies like
+Disney Streaming, and are supported by a dedicated, large, welcoming
+community of scala, http, and functional programming experts.
+
+##### Exercise 7
+
+In this exercise, you are going to setup a basic webserver using
+http4s. When you first setup an http server, the most basic thing you
+can do is create an http endpoint to check that you can communicate
+with it over http. This is typically called a "health check" endpoint.
+
+The server code is in `./modules/server/src/main/scala/scaladays`.
+
+###### Tagless Final Encoding
+
+Before we go into the specifics of setting up an http4s server, let's
+take a little time to discuss a functional programming architecture
+called `tagless final` encoding. We're not going to go too deeply into
+the theorhetical background of tagless final, but we are going to talk
+about its practical uses.
+
+As discussed in the domain modeling section, modeling a domain is not
+just about the data objects in the domain, but about the operations on
+those datatypes. Just as we want to constrain the size possible values
+as tightly as possible, we want to constrain the size of the possible
+implementations of the interfaces of those operations.
+
+We calculate the size of a method or function in the same way as we
+calculate the size of a data type. Because methods and functions have
+arguments, they are inherently product types. They also have
+**return** values, and so to calculate the possible values, we have to
+take the product of the return type to the power of the possible
+values of the return type. For a method foo:
+
+
+```scala
+
+def foo(x: Int, s: Short): Boolean
+```
+
+the calculation looks like this:
+
+```
+number possible implementations of foo = (number of possible values of Int * number of possible values of Short) ^ number of values of Boolean = (4294967296 * 65536) ^ 2 = 7.92281625143x10^28
+```
+.
+
+Obviously, this is quite a large interface. We would have to generate
+a _lot_ of inputs to test to exhaustively verify the behavior of foo
+any chosen foo implementation is the correct one. When the methods or
+classes are grouped into a module or class, we can add the sizes of
+the methods in the class together and calculate the size of the whole
+interface. These are likewise, quite large.
+
+To reduce this complexity, we want to limit the size of the interfaces
+we create and use. We use the same methods to reduce this complexity
+as we do when creating data types -- use Sum types whenever possible,
+use generics whenever possible, and use small, constrained product
+types as arguments and returns whenever necessary. In scala, we also
+have the option of constraining the generic types passed to methods,
+providing small, independent interfaces applied to generic types called
+`Context Bounds`:
+
+```scala
+// here Labelable is a context bound on A, and Label is a Sum type
+enum Label:
+  case Sold, PendingSale, Undefined
+
+trait Labelable[A]:
+  def toLabel(a: A): Label
+
+def foo[A: Labelable](a: A): Label
+```
+
+It's important to note that we don't have to express a context bound
+in the generic parameters of a method in Scala 3. We can also express
+it as a `using` parameter, a parameter to a `ContextFunction`, or a
+normal parameter. All of the following mean the same thing.
+
+```scala
+def fooUsing[A](a: A)(using Labelable[A]): Label
+def fooContextFunction[A](a: A): Labelable[A] ?=> Label
+def fooNormal[A](a: A, labelable: Labelable[A]): Label
+val fooVal: [A] => Labelable[A] ?=> Label = [A] => Labelable[A] ?=> (a: A) => summon[Labelable[A]].toLabel(a)
+```
+
+In FP, we like to delay side effects until the latest possible
+moment. We do this, in general, by encoding programs as data types and
+defininig an interpreter that converts a datatype into an executable
+program at runtime. This can be a little tedious without helper
+interfaces. Imagine programming `fooVal` above like this:
+
+```scala
+Apply(
+  Select(
+    Apply(
+	  TypeApply(
+	    ClassOf(
+		  Summon.class
+	   ), 
+	   List(
+	     TypeTree(
+		   TypeApply(
+		     ClassOf(
+			   Labelable.class
+		     ),
+			 List(
+			   TypeParamRef("A")
+		     )
+		   )
+	     )
+	   )
+	  ), 
+	  List()
+	), 
+    "toLabel"
+  ), 
+  List(
+    ParamRef("a")
+  )
+)
+```
+
+That is clearly not very ergonomic. `tagless final` allows us to use
+all the complexity limiting tricks we talked about for values to
+encode programs with small, parameterized methods which produce trees
+of data values encoding a given, possibly side-effecting domain, like
+say handling http requests and responses behind the implementations of
+the interfaces. The data types that are built then expose some sort of
+`run` method, which interprets the value of the tree produced.
+
+In this way, programs written with a tagless final encoding limit the
+cumbersome data type encodings required to work with side-effecting
+programs while still allowing users to reason about the code as a tree
+of immutable values. This allows the programmer to refactor tagless
+final programs safely.
+
+It allows the designers of libraries to control and optimize the
+interpretation of the trees produced by effectful programs without
+adding additional complexity to the interfaces used by users of these
+libraries. Method calls to the interfaces are free to modify the input
+trees of previous calls, for example.
+
+Meanwhile, users are prevented from violating the calling conventions
+of the library by coding against the interface rather than the
+implementation, enforced by the typechecker. The underlying complexity
+is fully abstracted away from the user.
+
+New methods can be added to a library without violating the source
+compatibility of code built against earlier versions. And many other
+advantages.
+
+In general, tagless final programs do this in the same way as we
+defined foo above, by inverting control to some interface over an
+unknown effect type, generally encoded as `F[_]` in interfaces and
+methods. The effect type is chosen later, when the program is executed
+in main or in tests. As long as the effect data type chosen matches
+the constraints of the interfaces passed to the methods within a
+program, any effect data type will work.
+
+In http4s and cats-based libraries, we generally choose to use
+cats-effect's `IO` data type as the effect type.
+
+Don't worry if you don't fully understand the above. Just know that
+`tagless final` is a way of managing complexity through inversion of
+control that produces programs as values, which are safer to refactor
+during maintenance and limit the number of things a programmer has to
+think about when reading the program.
+
+Open `modules/server/src/main/scala/scaladays/Main.scala`. You should see this:
+
+```scala
+package scaladays
+
+import scaladays.models.ServiceError
+
+import cats.effect.{ExitCode, IO, IOApp}
+
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+
+object Main extends IOApp:
+
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
+
+  def run(args: List[String]): IO[ExitCode] =
+    Server
+      .serve[IO]
+      .compile
+      .drain
+      .handleErrorWith { error =>
+        logger.error(error)("Unrecoverable error") >>
+          IO.raiseError[ExitCode](ServiceError(error.getMessage))
+      }
+      .as(ExitCode.Success)
+```
+
+Let's explain what this does:
+
+- `Main` object extends `IOApp`. `IOApp` is a Cats-Effect trait that
+  serves as a simple and safe entry point for an application which
+  runs on the JVM. The main function of your application will run
+  inside the `IO` context, providing safety and referential
+  transparency.
+
+- The `given` keyword is used to define an implicit value of type
+  `Logger[IO]`, which represents a logger that works within the `IO`
+  effect type. The `Slf4jLogger.getLogger[IO]` call creates a new
+  logger backed by SLF4J, a logging facade for Java.
+
+- The `run` method is the main method that Cats-Effect's `IOApp`
+  requires you to implement. It takes a list of command-line arguments
+  and returns an `IO` of `ExitCode`. `ExitCode` is a datatype
+  representing the exit code of a process, with `Success` and `Error`
+  being the primary examples.
+
+- The body of `run` first calls `Server.serve[IO]`, which is a method
+  that starts an HTTP server and returns a stream of `IO` actions
+  representing the server's operation.
+
+- `compile` is a method from fs2, a functional streams library for
+  Scala. It transforms a stream into an effectful action. The action
+  in this case is the server operation.
+
+- `drain` is another method from fs2 which runs the stream purely for
+  its effects, discarding any output.
+
+- The `handleErrorWith` function is used to handle any errors that may
+  occur when the server is running. If an error occurs, it logs an
+  error message with the logger, and then raises an error of type
+  `ExitCode` wrapped in the `IO` monad, using a `ServiceError` to wrap
+  the original error message. The `>>` operator is used to sequence
+  two `IO` actions, ensuring that the first action (logging the error)
+  is completed before the second action (raising the error) is
+  started.
+
+- Finally, `.as(ExitCode.Success)` is used to map the result of the
+  entire computation to `ExitCode.Success`, meaning that if the server
+  runs successfully and then terminates, the application will exit
+  with a success status.
+
+Open `Server.scala`. You should see the following:
+
+```scala
+package scaladays
+
+import scaladays.config.{ConfigurationService}
+import scaladays.server.*
+import cats.effect.{Async, ExitCode, Resource}
+import cats.implicits.*
+import org.http4s.server
+import org.http4s.server.middleware.CORS
+import org.http4s.server.websocket.WebSocketBuilder
+import org.typelevel.log4cats.Logger
+
+object Server:
+
+  def serve[F[_]: Async: Logger]: fs2.Stream[F, ExitCode] =
+    for
+      configService <- fs2.Stream.eval(ConfigurationService.impl)
+      routes         = (ws: WebSocketBuilder[F]) => HealthCheck.healthService
+      stream        <- fs2.Stream.eval(
+                         configService.httpServer
+                           .withHttpWebSocketApp(ws =>
+                             CORS.policy.withAllowOriginAll.withAllowCredentials(false).apply(routes(ws).orNotFound)
+                           )
+                           .build
+                           .use(_ => Async[F].never[ExitCode])
+                       )
+    yield stream
+```
+
+This Scala 3 file defines a `Server` object that sets up an HTTP
+server using http4s and Cats-Effect. Here is a breakdown of its
+components:
+
+- The `serve` method defines a server that operates inside an effect
+  type `F[_]`. This type must have an `Async` instance (to provide
+  asynchronous and concurrent operations) and a `Logger` instance (for
+  logging). It returns a stream of `ExitCode` values, which represent
+  the potential exit codes of the server process.
+
+- Inside the for-comprehension, `configService <-
+  fs2.Stream.eval(ConfigurationService.impl)` retrieves an instance of
+  a configuration service by evaluating an effect. `fs2.Stream.eval`
+  creates a stream that emits the result of a single effectful
+  computation.
+
+- The `routes` variable is defined as a function that takes a
+  `WebSocketBuilder` and returns a `HealthCheck.healthService`. It
+  provides a route for checking the health status of the service.
+
+- The `stream` variable is a stream that emits the result of an
+  effectful computation. This computation first retrieves the HTTP
+  server configuration from the `configService`, configures it with a
+  WebSocket application, builds the server, and then starts it. The
+  server is wrapped in a resource using
+  `configService.httpServer.build.use`, ensuring that the server will
+  be properly shut down even if an error occurs.
+
+- The WebSocket application is configured to use the CORS
+  (Cross-Origin Resource Sharing) policy, which allows all origins and
+  disallows credentials. This means that requests from any origin are
+  allowed, but they cannot include credentials like cookies or HTTP
+  authentication.
+
+- The routes for the WebSocket application are given by the `routes`
+  function defined earlier. If a request does not match any route, a
+  404 Not Found response is returned (`routes(ws).orNotFound`).
+
+- `Async[F].never[ExitCode]` creates an effect that never completes,
+  which is used to keep the server running indefinitely. The server
+  will only be shut down when the JVM process is terminated, or if an
+  error occurs in the server.
+
+- The for-comprehension yields the `stream` at the end, which is the
+  stream of `ExitCode` values produced by the server. In this case, it
+  will only ever emit a value if an error occurs in the server,
+  because the server runs indefinitely.
+
+Open `modules/server/src/main/scala/scaladays/config/ConfigurationService.scala`.
+
+You should see the following:
+
+```scala
+package scaladays.config
+
+import scaladays.models.{Configuration, HttpConfiguration}
+
+import cats.effect.std.Dispatcher
+import cats.effect.{Async, Resource}
+import cats.implicits.*
+
+import org.http4s.ember.server.EmberServerBuilder
+import org.http4s.{Response, Status}
+
+import com.comcast.ip4s.{Host, Port}
+import org.typelevel.log4cats.Logger
+
+trait ConfigurationService[F[_]]:
+
+  def config: Configuration
+
+  def httpServer: EmberServerBuilder[F]
+
+
+object ConfigurationService:
+
+  def impl[F[_]: Async: Logger]: F[ConfigurationService[F]] =
+    def bootServer(httpConfiguration: HttpConfiguration): EmberServerBuilder[F] =
+      EmberServerBuilder
+        .default[F]
+        .withHostOption(Host.fromString(httpConfiguration.host))
+        .withPort(Port.fromInt(httpConfiguration.port).get)
+        .withMaxHeaderSize(8 * 1024)
+        .withIdleTimeout(scala.concurrent.duration.Duration.Inf)
+        .withErrorHandler { case e =>
+          Logger[F]
+            .error(e)("Error in http server")
+            .as(
+              Response[F](Status.InternalServerError).putHeaders(org.http4s.headers.`Content-Length`.zero)
+            )
+        }
+        .withOnWriteFailure { (optReq, response, failure) =>
+          Logger[F].error(failure)(
+            s"Error writing http response: \n\t- ${optReq.toString} \n\t- ${response.toString}"
+          )
+        }
+
+    for
+      conf     <- SetupConfiguration.loadConfiguration[F, Configuration]
+    yield new ConfigurationService[F]:
+      override lazy val config: Configuration                   = conf
+      override lazy val httpServer: EmberServerBuilder[F]       = bootServer(
+        conf.http.server
+      )
+```
+
+This Scala 3 file defines a `ConfigurationService` trait and its
+implementation, which encapsulates the configuration data and HTTP
+server setup for the application.
+
+Here's a breakdown of its components:
+
+- `ConfigurationService` trait: This trait has two methods:
+  - `config`: Returns a `Configuration` object. The actual
+    configuration data is not shown in this snippet, but it likely
+    includes settings such as server host, port, etc.
+  - `httpServer`: Returns a `EmberServerBuilder[F]` object, which is
+    used to build an HTTP server.
+
+- `ConfigurationService.impl`: This method provides an implementation
+  of the `ConfigurationService` trait. It requires an effect type
+  `F[_]` that has an `Async` and a `Logger` instance. It returns a
+  `ConfigurationService[F]` wrapped in an `F` effect.
+
+- `bootServer` function: This function takes an `HttpConfiguration`
+  and returns a server builder. It sets up the server host, port, max
+  header size, idle timeout, and error handlers using the provided
+  configuration. The error handlers log any errors that occur in the
+  server and return a 500 Internal Server Error response. There is
+  also a handler for write failures, which logs the failed request and
+  response.
+
+- The for-comprehension loads the configuration using
+  `SetupConfiguration.loadConfiguration[F, Configuration]` and then
+  creates a new `ConfigurationService` with this configuration. The
+  `config` and `httpServer` methods of the service are implemented as
+  lazy vals, meaning that they are only computed once, when they are
+  first accessed.
+  
+  Open `SetupConfiguration.scala`. You should see the following:
+  
+  ```scala
+  package scaladays.config
+
+import scala.reflect.ClassTag
+
+import cats.effect.Async
+import cats.implicits.*
+
+import com.typesafe.config.ConfigFactory
+import org.typelevel.log4cats.Logger
+import pureconfig.{ConfigReader, ConfigSource}
+
+object SetupConfiguration:
+
+  def loadConfiguration[F[_]: Async: Logger, C: ClassTag](using cr: ConfigReader[C]): F[C] =
+    for
+      classLoader <- Async[F].delay(
+                       ConfigFactory.load(getClass().getClassLoader())
+                     )
+      config      <- Async[F].delay(
+                       ConfigSource.fromConfig(classLoader).at("scaladays.workshop").loadOrThrow[C]
+                     )
+    yield config
+```
+
+This Scala 3 file defines a `SetupConfiguration` object that contains
+a method for loading application configuration data. The configuration
+data is loaded using the PureConfig and TypeSafe Config libraries.
+
+Here's a breakdown of the file:
+
+- `SetupConfiguration` object: This object has one method,
+  `loadConfiguration`.
+
+- `loadConfiguration` method: This generic method takes two type
+  parameters `F[_]` and `C`. `F[_]` is the effect type, and `C` is the
+  configuration type. The method requires the effect type `F[_]` to
+  have an `Async` and `Logger` typeclass instance, and `C` to have a
+  `ClassTag` and a `ConfigReader`. The method returns the
+  configuration of type `C` wrapped in the effect type `F`.
+
+    - `ClassTag` is a type class used by the Scala runtime system to
+      retain type information for instances of generic types. It is
+      used here to retain the type information about `C`, the
+      configuration type.
+
+    - `ConfigReader` is a type class from the PureConfig library. It
+      provides a way to convert raw configuration data into a type
+      `C`.
+
+- Inside the method, a for-comprehension is used to load the
+  configuration:
+    - The `com.typesafe.config.Config` object is loaded using the
+      class loader of the current class. The `Async[F].delay` function
+      is used to suspend this operation in the `F` effect.
+    - A `ConfigSource` is obtained by calling
+      `ConfigSource.fromConfig(classLoader).at("scaladays.workshop")`. This
+      specifies the path in the configuration file where the
+      configuration data is located. `loadOrThrow[C]` is used to load
+      and decode the configuration data into type `C`. If any error
+      occurs during loading or decoding, an exception will be
+      thrown. Again, `Async[F].delay` is used to suspend this
+      operation in the `F` effect.
+    - Finally, the loaded and decoded configuration is yielded.
+
+The configuration file read by the `SetupConfiguration` object is
+`modules/server/src/main/resources/application.conf`. Open it.
+
+It should look like this:
+
+```hocon
+scaladays.workshop {
+  http {
+    server {
+      host = "0.0.0.0"
+      port = 8082
+    }
+
+    health {
+      host = "0.0.0.0"
+      port = 8083
+    }
+  }
+}
+```
+
+The `application.conf` file contains configuration data for the
+`scaladays.workshop` application. The configuration is mainly for the
+HTTP server and health check services.
+
+Here's a breakdown of the configuration:
+
+- `scaladays.workshop`: This is the root path in the configuration and
+  holds all configuration data for the `scaladays.workshop`
+  application.
+
+- `http`: Inside the `scaladays.workshop` block, there is an `http`
+  block. This block contains configuration data related to HTTP
+  services.
+
+    - `server`: This block holds configuration data for the main HTTP
+      server of the application.
+        - `host`: This setting specifies the network interface the
+          server should listen on. The value `"0.0.0.0"` means that
+          the server should listen on all network interfaces.
+        - `port`: This setting specifies the port number the server
+          should listen on. The value `8082` means that the server
+          should listen on port 8082.
+
+    - `health`: This block contains configuration data for the health
+      check service.
+        - `host`: Similar to the `host` in the `server` block, this
+          setting specifies the network interface the health check
+          service should listen on. The value `"0.0.0.0"` means that
+          the service should listen on all network interfaces.
+        - `port`: Similar to the `port` in the `server` block, this
+          setting specifies the port number the health check service
+          should listen on. The value `8083` means that the service
+          should listen on port 8083.
+
+This configuration data can be loaded into your application using the
+PureConfig library, as shown in the `SetupConfiguration.scala`
+file. The loaded configuration data will be well-typed and can be used
+to set up your application's HTTP server and health check service.
+
+Open
+`modules/server/src/main/scala/scaladays/server/HealthCheck.scala`. It
+should look lke this:
+
+```scala
+package scaladays.server
+
+import cats.effect.Async
+
+import org.http4s.*
+import org.http4s.dsl.*
+
+object HealthCheck:
+
+  def healthService[F[_]: Async]: HttpRoutes[F] =
+    val dsl = new Http4sDsl[F] {}
+    import dsl.*
+      HttpRoutes.of[F] {
+        case GET -> Root / "hello" => Ok("World!")
+    }
+```
+
+The `HealthCheck.scala` file defines a `HealthCheck` object that
+includes a method for setting up HTTP routes for health checking
+services.
+
+Here's a breakdown:
+
+- `HealthCheck` object: This object contains one method,
+  `healthService`.
+
+- `healthService` method: This method takes a single type parameter
+  `F[_]` which requires an `Async` typeclass instance. The method
+  returns `HttpRoutes[F]`, a data type from the http4s library
+  representing a set of HTTP routes.
+
+Inside the `healthService` method:
+
+- An instance of `Http4sDsl[F]` is created. `Http4sDsl` is a
+  domain-specific language (DSL) for creating HTTP routes in a
+  declarative way. The instance is assigned to `dsl`, and all members
+  of `dsl` are then imported for use.
+
+- `HttpRoutes.of[F]` is used to define a set of HTTP routes. One
+  route is defined:
+    - The route responds to a GET request to the path "/hello"
+      with a 200 OK response containing the text "World!".
+
+The `Async` typeclass in Cats Effect signifies a computation that may
+execute asynchronously. It is used here because http4s is a
+non-blocking, purely functional library for creating HTTP services,
+which aligns well with non-blocking, asynchronous effect types like
+the ones provided by Cats Effect.
+
+Your task in this exercise is to define a healthcheck endpoint at GET
+`/ping` that outputs "pong", using the example of the `/hello` route
+in the file. When you are done defining the route, delete the example
+`/hello` route.
+
+You can test if your service is correct by runnig
+
+```scala
+dockerComposeUp
+```
+
+in the sbt console for your project, and opening:
+`http://localhost:28082` in your browser when the server is fully
+started. You should see `pong` on the page.
+
+Congratulations! You've just set up your first real-world http4s
+server. Run
+
+```bash
+docker-compose down
+git reset --hard client-1
+```
+
+in your terminal to move on to the next step.
