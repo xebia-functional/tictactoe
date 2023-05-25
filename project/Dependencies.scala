@@ -8,6 +8,7 @@ object Dependencies {
   // define versions, The variable name must be camel case by module name
   object Versions {
     val catsEffect = "3.4.8"
+    val fuuid = "0.8.0-M2"
     val http4s = "1.0.0-M36"
     val munit = "0.7.29"
     val munitCats3 = "1.0.7"
@@ -31,7 +32,12 @@ object Dependencies {
   }
 
   lazy val commonDepsSettings: Seq[Def.Setting[_]] = Def.settings(
-    libraryDependencies ++= Seq(Test.munit, Test.munitCats3, Test.munitScalacheck)
+    libraryDependencies ++= Seq(
+      Test.munit,
+      Test.munitCats3,
+      Test.munitScalacheck,
+      "io.chrisdavenport" %%% "fuuid" % Versions.fuuid
+    )
   )
 
   lazy val serverDepsSettings: Seq[Def.Setting[_]] = commonDepsSettings ++ Def.settings(
