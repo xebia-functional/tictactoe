@@ -79,6 +79,9 @@ sbt
 
 This means that changes in "commonJVM" will affect "server", and changes in "commonJS" will affect "tttClient". Both "server" and "tttClient" are part of the "scaladays-workshop-2023" project, so changes in these projects will affect the main project.
 
+<details>
+  <summary>Deep-dive: Explanation of the customisations in the build.sbt</summary>
+  
 #### Intermediate/Advanced SBT concepts and documentation
 
 1. **CrossProject**: A `crossProject` is a project that is built for multiple platforms. In our case, the JVM and JavaScript platforms. In this `build.sbt`, `common` is a `crossProject`. [Documentation](https://www.scala-js.org/doc/project/cross-build.html)
@@ -308,6 +311,9 @@ There are three `Universal / mappings` settings in the `tttClient` project:
     ```
 
 These settings ensure that all the necessary files are included in the package when the project is packaged.
+  
+</details>
+
 
 #### Sbt and Docker
 
@@ -321,6 +327,9 @@ Therefore, we need to run the container in a virtual machine capable of emulatin
 
 Finally we must build the image using the emulated linux/amd64 environment such that it will run under linux/amd64 emulation to enable our JNI Kafka dependency to execute on incompatible machines.
 
+
+<details>
+  <summary>Deep-dive: Customizing a the native packager Docker Image</summary>
 
 ##### SERVER / dockerCommands:
 
@@ -419,6 +428,8 @@ In the context of defining Docker commands in the `dockerCommands` setting, ther
 - More information about `Cmd` can be found in the [sbt-native-packager documentation](https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html).
 
 When defining Docker commands in the `dockerCommands` setting, you can use both `ExecCmd` and `Cmd` to perform different actions at different stages of the Docker image lifecycle.
+  
+</details>
 
 ### System Architecture
 
@@ -475,7 +486,12 @@ services:
 
 ##### Exercise 1
 
-This Docker Compose configuration sets up a ZooKeeper cluster with three nodes: `zookeeper-1`, `zookeeper-2`, and `zookeeper-3`. Let's explain the key elements:
+This Docker Compose configuration sets up a ZooKeeper cluster with three nodes: `zookeeper-1`, `zookeeper-2`, and `zookeeper-3`. 
+
+<details>
+  <summary>Deep-dive: Explanation of the zookeeper docker-compose services</summary>
+
+Let's explain the key elements:
 
 `version: "3.5"`: Specifies the Docker Compose file version.
 
@@ -498,8 +514,11 @@ This Docker Compose configuration sets up a ZooKeeper cluster with three nodes: 
 `ZOOKEEPER_SYNC_LIMIT`: Specifies the maximum time (in ticks) that ZooKeeper servers can be out of sync with each other.
 
 `ZOOKEEPER_SERVERS`: Sets the list of ZooKeeper servers in the format `server:id1:host1:port1;server:id2:host2:port2;....` This configuration helps ZooKeeper nodes discover and connect to each other in the cluster.
+  
+</details>
 
-You need to fill in the ZOOKEEPER_SERVER_ID, ZOOKEEPER_CLIENT_PORT, and ZOOKEEPER_SERVERS environment variables for the zookeeper-3 service to complete the configuration. After filling it in, you can check that the zookeeper cluster is setup appropriately by saving the file, and running:
+
+You need to fill in the ZOOKEEPER_SERVER_ID, ZOOKEEPER_CLIENT_PORT, and ZOOKEEPER_SERVERS environment variables for the zookeeper-3 service to complete the configuration.  Use the other zookeeper services as examples to help you fill it in. After filling it in, you can check that the zookeeper cluster is setup appropriately by saving the file, and running:
 
 ```bash
 docker-compose up -d
@@ -565,7 +584,12 @@ To set up a Kafka cluster using Docker Compose, continue from the previous step 
 
 ##### Exercise 2
 
-This snippet defines three Kafka services, `kafka-1`, `kafka-2`, and `kafka-3`, within the Docker Compose configuration. Let's break down the key elements:
+This snippet defines three Kafka services, `kafka-1`, `kafka-2`, and `kafka-3`, within the Docker Compose configuration. 
+
+<details>
+  <summary>Deep-dive: Explanation of the kafka docker-compose services</summary>
+
+Let's break down the key elements:
 
 `kafka-1` and `kafka-2`:
 
@@ -586,7 +610,10 @@ This snippet defines three Kafka services, `kafka-1`, `kafka-2`, and `kafka-3`, 
 `kafka-3`:
 
 Similar to `kafka-1` and `kafka-2`, this section defines the configuration for the `kafka-3` service.
-However, the `image`, `depends_on`, and `environment` variable values are left blank (???) and need to be filled in according to your specific setup.
+  
+</details>
+
+In the `kafka-3` service, the `image`, `depends_on`, and `environment` variable values are left blank (???) and need to be filled in.
 To configure the `kafka-3` service correctly, you need to provide the appropriate values for `image`, `depends_on`, `KAFKA_BROKER_ID`, `KAFKA_ZOOKEEPER_CONNECT`, and `KAFKA_ADVERTISED_LISTENERS` based on the values for `kafka-1` and `kafka-2`.
 
 After filling it in, you can check that the kafka cluster is setup appropriately by saving the file, and running:
@@ -615,7 +642,7 @@ in the terminal and move on to adding the rest of the docker-compose configurati
 
 #### Adding the schema-registry, kafka monitor, the game client and server
 
-To set up a the kafka-magic monitor, and the game client and server in the docker-compose:
+To set up a the kafka-magic monitor, schema-registry, and the game client and server in the docker-compose:
 
 1. Copy the following code below the kafka services in the 'src/docker-compose.yml' file in the workspace:
 
@@ -688,6 +715,9 @@ volumes:
 
 ##### Exercise 3
 
+<details>
+  <summary>Deep-dive: Explanation of the remaining docker-compose services</summary>
+  
 Let's examine the above snippet.
 
 `schema-registry`:
@@ -746,9 +776,11 @@ Let's examine the above snippet.
 `volumes`:
 
 `myConfig`: Defines a named volume called myConfig that can be used for persistent data storage.
+  
+</details>
 
 
-After filling in the blank for the kafka-3 server, you can check that everything is setup appropriately by saving the file, runnig:
+Fill in the blank for the kafka-3 server based on the other kafka servers, you can check that everything is setup appropriately by saving the file, runnig:
 
 ```bash
 docker-compose up -d
@@ -850,6 +882,9 @@ There are several options for how to model these states. They could be strings. 
 
 When we are modeling a domain, we should always try to preserve the commonalities between the objects in a domain, try to use the fewest objects possible to describe it, and keep the types as unique as possible with as few fields as possible. This is because, when testing or debugging or thinking about the program using the domain, you want to think about the fewest possible values an object of that type could be.
 
+
+<details>
+  <summary>Deep-dive: Calculating and limiting the sizes of data models.</summary>
 To make the fewest possible items, we have to know how to calculate the size of the different types of types Scala 3 can express.
 
 Scala 3 has two fundamental types of types:
@@ -949,6 +984,8 @@ type FooBar = Foo & Bar
 Which is calculated the same way as product types -- that is the size of Foo * size of Bar.
 
 From the above, it should be obvious that to keep things simple to think about we should prefer to use sum types over generic product types whenever possible.
+  
+</details>
 
 Open
 `modules/common/shared/src/main/scala/scaladays/models/Game.scala`
@@ -966,8 +1003,8 @@ enum GameState:
 
 Your task in this exercise, given the description of the game above and the goal of keeping the `GameState` type as simple as possible while retaining the relationships of the individual states, is to fill out the `GameState` enum.
 
-The number of possible types for `GameState` should be 6. Once you
-have it, save the file and move on to the next step by running:
+There should be 6 possible types for `GameState`. Once you have it,
+save the file and move on to the next step by running:
 
 ```bash
 git reset --hard domain-modeling-2
@@ -1001,7 +1038,12 @@ final case class Game(gameId: GameId, crossPlayer: PlayerId, circlePlayer: Playe
 
 In addition in `modules/common/shared/src/main/scala/scaladays/models` there is a new file: `ids.scala`.
 
-Scala 3 added a great feature for modeling called Opaque Types. It allows you to create an alias for a type that, outside of the file where it was created, behaves as if it is an entirely separate type. This is similar to type aliases in Scala 2, but in Scala 2, when two type aliases are assigned to the same type, the two types are equal to each other and interchangeable:
+Scala 3 added a great feature for modeling called Opaque Types. It
+allows you to create an alias for a type that, outside of the file
+where it was created, behaves as if it is an entirely separate
+type. This is similar to type aliases in Scala 2, but in Scala 2, when
+two type aliases are assigned to the same type, the two types are
+equal to each other and interchangeable:
 
 ```scala
 // scala 2
@@ -1017,7 +1059,8 @@ def makeUseFoo(b: Bar): UseFoo = UseFoo(b)
 def makeUseBar(f: Foo): UseBar = UseBar(f)
 ```
 
-With opaque types, you can't accidentally swap Bar and Foo like in the above:
+With opaque types, you can't accidentally swap Bar and Foo like in the
+above:
 
 ```scala
 //scala 3
@@ -1042,20 +1085,19 @@ def makeUseBar(f: Foo): UseBar = UseBar(f) // won't compile!
 
 ##### Exercise 6
 
-In the game model above, we have two new types: `GameId` and `PlayerId`.
+In the game model above, we have two new types: `GameId` and
+`PlayerId`. To avoid possible pitfalls, you'll use `FUUID`s instead of
+`UUID`s in our domain model.
 
 To quote the FUUID site:
 
 > Java UUID’s aren’t “exceptionally” safe. Operations throw and are not referentially transparent. We can fix that.
 -- https://davenverse.github.io/fuuid/
 
-To avoid possible pitfalls, you'll use `FUUID`s instead of `UUID`s in
-our domain model.
-
 However, you don't want to be able to swap `GameId` and `PlayerId`
 anywhere we use the ids. So your job is to use opaque types to define
 `GameId` and `PlayerId` so that that cannot happen. Include an apply
-for each type like the opaque type example above.
+for each type like in the opaque type example above.
 
 `ids.scala` should look like this:
 
@@ -1139,7 +1181,7 @@ The server code is in `./modules/server/src/main/scala/scaladays`.
 <details>
   <summary>Deep-dive: Why we use Tagless Final in Scala without formal theory</summary>
 
-  ###### Tagless Final Encoding
+###### Tagless Final Encoding
 
 Before we go into the specifics of setting up an http4s server, let's
 take a little time to discuss a functional programming architecture
@@ -1299,6 +1341,14 @@ think about when reading the program.
   
 </details>
 
+
+<details>
+  <summary>Deep-dive: Http4s Server Boilerplate</summary>
+  
+There are some common things you will always use when setting up a
+configurable http4s server. In the latest commit, we've added some
+files to setup a server using an application.conf HOCON file. An
+example of this and the explanation of the files is below:
 
 Open `modules/server/src/main/scala/scaladays/Main.scala`. You should see this:
 
@@ -1668,6 +1718,8 @@ This configuration data can be loaded into your application using the
 PureConfig library, as shown in the `SetupConfiguration.scala`
 file. The loaded configuration data will be well-typed and can be used
 to set up your application's HTTP server and health check service.
+
+</details>
 
 Open
 `modules/server/src/main/scala/scaladays/server/HealthCheck.scala`. It
