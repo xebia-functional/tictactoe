@@ -1136,7 +1136,10 @@ with it over http. This is typically called a "health check" endpoint.
 
 The server code is in `./modules/server/src/main/scala/scaladays`.
 
-###### Tagless Final Encoding
+<details>
+  <summary>Deep-dive: Why we use Tagless Final in Scala without formal theory</summary>
+
+  ###### Tagless Final Encoding
 
 Before we go into the specifics of setting up an http4s server, let's
 take a little time to discuss a functional programming architecture
@@ -1166,7 +1169,7 @@ def foo(x: Int, s: Short): Boolean
 the calculation looks like this:
 
 ```
-number possible implementations of foo = (number of possible values of Int * number of possible values of Short) ^ number of values of Boolean = (4294967296 * 65536) ^ 2 = 7.92281625143x10^28
+number possible implementations of foo = number of values of Boolean ^ (number of possible values of Int * number of possible values of Short) = 2 ^ (4294967296 * 65536) = Effectively Infinity
 ```
 .
 
@@ -1211,7 +1214,7 @@ val fooVal: [A] => Labelable[A] ?=> Label = [A] => Labelable[A] ?=> (a: A) => su
 
 In FP, we like to delay side effects until the latest possible
 moment. We do this, in general, by encoding programs as data types and
-defininig an interpreter that converts a datatype into an executable
+defining an interpreter that converts a datatype into an executable
 program at runtime. This can be a little tedious without helper
 interfaces. Imagine programming `fooVal` above like this:
 
@@ -1249,10 +1252,11 @@ Apply(
 That is clearly not very ergonomic. `tagless final` allows us to use
 all the complexity limiting tricks we talked about for values to
 encode programs with small, parameterized methods which produce trees
-of data values encoding a given, possibly side-effecting domain, like
-say handling http requests and responses behind the implementations of
-the interfaces. The data types that are built then expose some sort of
-`run` method, which interprets the value of the tree produced.
+of data values (for side effects) encoding a given, possibly
+side-effecting domain, like say handling http requests and responses
+behind the implementations of the interfaces. The data types that are
+built then expose some sort of `run` method, which interprets the
+value of the tree produced.
 
 In this way, programs written with a tagless final encoding limit the
 cumbersome data type encodings required to work with side-effecting
@@ -1291,6 +1295,10 @@ Don't worry if you don't fully understand the above. Just know that
 control that produces programs as values, which are safer to refactor
 during maintenance and limit the number of things a programmer has to
 think about when reading the program.
+
+  
+</details>
+
 
 Open `modules/server/src/main/scala/scaladays/Main.scala`. You should see this:
 
