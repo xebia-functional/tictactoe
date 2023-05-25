@@ -1,0 +1,17 @@
+### SBT and IDEs ###
+.bloop/
+.bsp/
+.metals/
+.vscode/
+.idea/
+target/
+metals.sbt
+
+### Java ###
+
+*.class
+*.log
+
+### macOS ###
+
+.DS_Store
