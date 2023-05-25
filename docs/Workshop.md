@@ -1110,8 +1110,8 @@ well as the rendering and input handling must be performed on the
 client, mixing the two concerns.
 
 A more flexible solution is to create a web server to handle the
-processing of the domain model. This allows the client to focus on the
-user experience for the players and to offload game processing and
+processing of the business logic. This allows the client to focus on
+the user experience for the players and to offload game processing and
 state management to the server.
 
 The premier scala http library is [http4s](https://http4s.org/).
