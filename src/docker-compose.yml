@@ -74,7 +74,7 @@ services:
       - "8081:8081"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,???'
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,PLAINTEXT://kafka-3:9092'
   server:
     image: "127.0.0.1:${SCALADAYS_WORKSHOP_DOCKER_REGISTRY_HOST_PORT?Cannot find host port}/scaladays-workshop-2023-server:latest"
     platform: linux/amd64
@@ -82,9 +82,11 @@ services:
     restart: always
     environment:
       ROOT_LOG_LEVEL : ERROR
+      JAVA_OPTS : "-Xdebug  -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:10001"
     ports:
       - "28082:8082"
       - "28083:8085"
+      - "10001:10001"
     depends_on:
       - zookeeper-1
       - zookeeper-2
