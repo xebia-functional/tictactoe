@@ -787,11 +787,316 @@ There is almost nothing more important to the success of a programming project t
 * type inference
 * traits
 
-all still exist in Scala 3. However, new features, such as opaque types, improved enum types, union types, 
+all still exist in Scala 3.
+
+However, new and improved features, including:
+
+* opaque types
+* improved enum types
+* union types
+* improved macro systems
+* hlist-like tuples
+* union and intersection types
+* CanThrow
+* Tasty
+
+allow for more compile-time constraint restriction, discrete typing, and batteries-included domain modeling without the use of external libraries, like [Refined](https://github.com/fthomas/refined), [Scala Newtype](https://github.com/estatico/scala-newtype), [Shapeless 2](https://github.com/milessabin/shapeless/tree/series/2.3) and [scalameta](https://github.com/scalameta/scalameta).
+
+A domain is the closed model of some universe of discourse. It's all
+the objects, operations, and relationships within the universe in the
+"real world". Obviously we can't simulate all the things in a "real"
+pet store on a comupter system -- that would include all the physical
+interactions of all the subatomic particles in the pet store and their
+probabilistic behavior. So when we describe a domain we wish to
+encode, we define only the macro-level objects, operations, and
+relationships of the real domain relevant within the goals of the
+execution of a computer simulation, or program.
+
+Functional domain modeling is the practice of defining domain models
+as immutable data values and predominately pure functions that operate
+upon those models. It takes the practice of defining a model with
+names and operations from a real universe of discourse and applies
+functional principals to ensure that the data types are immutable and
+side effecting operations are limited.
+
+For today's workshop, we're modeling a few very small universes of
+discourse. The first one is the game Tic Tac Toe. In Tic Tac Toe we
+have a 3x3 board forming grid of positions players may play. There are
+two players. There are two piece types: X and O. One player is
+assigned to the X pieces, and another to the Y pieces. Players may not
+swap pieces. The player assigned to X goes first and places an X in
+any space on the grid. Only one piece can occupy a grid space at one
+time. Once placed a piece cannot be moved. After X has placed their
+piece, the O player places an O on one of the remaining open spaces on
+the gamee board. Players continue to alternate until one player has 3
+of the same pieces in a horizontal, vertical, or diagonal row of game
+board spaces, in which case that player wins the game, or there are no
+more spaces left upon which to play, which means the game is
+tied. Both conditions result in the end of the game and require the
+start of a new one.
+
+Before we start the exercise, think about how you would design model
+domain datatypes in Scala 3. What data types will you need? Will they
+have fields? If so, what should they be named? Are there any
+relationships between them?
+
+##### Exercise 5
+
+Since your task today is to produce a full stack Tic Tac Toe game using Scala and Scala.js, you need to use your only subproject that is built for *both* Scala and Scala.js to build your shared domain model of Tic Tac Toe. This is the `common` project, and its code is in `./modules/common/shared/src/main/scala/scaladays/models/`.
+
+When first modeling a game's domain, think of the possible states the game can be in at any given time. In the description above, there are several states: turns, wins, and ties. In addition, as this is a simulation, there's a state where the game is "processing" the information sent to it from the players.
+
+There are several options for how to model these states. They could be strings. They could be several independent case classes. They could be one case class with several separate boolean properties, all of which but 1 are true at any given time.
+
+When we are modeling a domain, we should always try to preserve the commonalities between the objects in a domain, try to use the fewest objects possible to describe it, and keep the types as unique as possible with as few fields as possible. This is because, when testing or debugging or thinking about the program using the domain, you want to think about the fewest possible values an object of that type could be.
+
+To make the fewest possible items, we have to know how to calculate the size of the different types of types Scala 3 can express.
+
+Scala 3 has two fundamental types of types:
+
+1. Product types combine other types together concurrently in a manner similar to a Cartesian product. They're called product types because the total possible values of the type is the product of the total possible values of the individual types. In Scala, product types are typically represented by case classes.
+
+1. Sum types have a number of possible forms or alternatives. They're called sum types because the total possible values of the type is the sum of the total possible values of the individual types. In Scala 3, sum types are typically represented by sealed trait algebraic data types or, in more recent versions of Scala, enums or union types.
+
+The number of possible values of a sum type is calculated as the sum of the possible values of each of its alternatives.
+
+For example, the `Stoplight` enum below:
+
+```scala
+enum Stoplight:
+  case Red, Yellow, Green
+```
+
+has:
+
+```
+possible values of Stoplight = possible values of Ref + possible values of Yellow + possible values of Green = 1 + 1 + 1 = 3
+```
+
+The number of possible values for a product type is calculated as the product of the possible values of each of its fields.
+
+For example, a case class of an Int and a Short:
+
+```scala
+case class Example(s: Short, i: Int)
+```
+
+is
+
+```
+possible values of Example = possible values of Short * possible values of Int = (32,767 (for the positive values) + 1 (for zero) + + 32,768 (for the negative values)) * (2,147,483,647 (for the positive values) + 1 (for zero) + 2,147,483,648 (for the negative values)) = 65536 * 4294967296 = 2.81474976710660 * 10^14
+
+```
+
+because `s` is of type `Short` and `i` is of type `Int`.
+
+There are also generic product types. These are classes or case classes that take generic parameters. When we program against a generic interface, the Generic parameters count as a type with 1 possible value. Thus, since product types possible values are the product of the possible values of their fields, we should use the generic interface whenever possible when working with product types because a type like:
+
+```scala
+case class Foo[A, B, C, D](a: A, b: B, c: C, d:D)
+```
+
+even as a product type has 1 possible value, because `A`,`B`,`C`,and `D` all have one possible value, and the number of possible values for the product type, `Foo[]` is
+
+```
+possible values of Foo = possible values of A * possible values of B * possible values of C * possible values of D = 1 * 1 * 1 * 1 = 1
+```
+
+The two types of types can be mixed, for example a sum type made up of product types.
+
+```scala
+enum Things:
+  case This(a: Short) extends Things
+  case That(a: Short) extends Things
+  
+```
+
+which has:
+
+```
+number of possible values of This + number of possible values of That = 65536 + 65536 = 131,072
+```
+
+Or a product type of sum types:
+
+```
+enum Stoplight:
+  enum Stoplight:
+  case Red, Yellow, Green
+  
+case class Foo(s: Short, light: Stoplight)
+
+```
+.
+
+In this case, `Foo` has:
+
+```
+number possible values of Short * number possible values of Stoplight = 65536 * 3 = 196,608
+```
+
+possible values.
+
+For completeness, there is a final type, intersection types, which is the combination of all the types joined by the type intersection operator:
+
+```scala
+trait Foo
+trait Bar
+
+type FooBar = Foo & Bar
+```
+
+Which is calculated the same way as product types -- that is the size of Foo * size of Bar.
+
+From the above, it should be obvious that to keep things simple to think about we should prefer to use sum types over generic product types whenever possible.
+
+Open
+`modules/common/shared/src/main/scala/scaladays/models/Game.scala`
+
+It should look like this:
+
+```scala
+package scaladays.models
 
 
+enum GameState:
+  ???
+
+```
+
+Your task in this exercise, given the description of the game above and the goal of keeping the `GameState` type as simple as possible while retaining the relationships of the individual states, is to fill out the `GameState` enum.
+
+The number of possible types for `GameState` should be 6. Once you
+have it, save the file and move on to the next step by running:
+
+```bash
+git reset --hard domain-modeling-2
+```
+
+To move to the next step.
+
+`Game.scala` should now be updated. The names may not be exactly the same as what you entered, but there should be exactly the same number of them and their meanings should be similar to yours.
+
+We've now expanded the modeling to include the `Piece` type, the
+`Position` type, and the `Movement` type. Game.scala should now look like this:
 
 
+```scala
+enum Piece:
+  case Cross, Circle
+
+final case class Position(x: Int, y: Int)
+
+object Position:
+  given Ordering[Position] = (x: Position, y: Position) => if (x.x == y.x) x.y - y.y else x.x - y.x
+
+enum GameState:
+  case CrossTurn, CircleTurn, Processing, CrossWin, CircleWin, Tie
+
+final case class Movement(position: Position, piece: Piece, confirmed: Boolean = true)
+
+final case class Game(gameId: GameId, crossPlayer: PlayerId, circlePlayer: PlayerId, state: GameState, movements: List[Movement])
+
+```
+
+In addition in `modules/common/shared/src/main/scala/scaladays/models` there is a new file: `ids.scala`.
+
+Scala 3 added a great feature for modeling called Opaque Types. It allows you to create an alias for a type that, outside of the file where it was created, behaves as if it is an entirely separate type. This is similar to type aliases in Scala 2, but in Scala 2, when two type aliases are assigned to the same type, the two types are equal to each other and interchangeable:
+
+```scala
+// scala 2
+
+object aliases{
+type Foo = Int
+type Bar = Int
+
+case class UseFoo(f: Foo)
+case class UseBar(b: Bar)
+
+def makeUseFoo(b: Bar): UseFoo = UseFoo(b)
+def makeUseBar(f: Foo): UseBar = UseBar(f)
+```
+
+With opaque types, you can't accidentally swap Bar and Foo like in the above:
+
+```scala
+//scala 3
+
+opaque type Foo = Int
+
+object Foo:
+  def apply(i: Int): Foo = i
+  
+opaque type Bar = Int
+
+object Bar:
+  def apply(i: Int): Bar = i
+  
+case class UseFoo(f: Foo)
+case class UseBar(b: Bar)
+
+def makeUseFoo(b: Bar): UseFoo = UseFoo(b) // won't compile!
+def makeUseBar(f: Foo): UseBar = UseBar(f) // won't compile!
+```
+.
+
+##### Exercise 6
+
+In the game model above, we have two new types: `GameId` and `PlayerId`.
+
+To quote the FUUID site:
+
+> Java UUID’s aren’t “exceptionally” safe. Operations throw and are not referentially transparent. We can fix that.
+-- https://davenverse.github.io/fuuid/
+
+To avoid possible pitfalls, you'll use `FUUID`s instead of `UUID`s in
+our domain model.
+
+However, you don't want to be able to swap `GameId` and `PlayerId`
+anywhere we use the ids. So your job is to use opaque types to define
+`GameId` and `PlayerId` so that that cannot happen. Include an apply
+for each type like the opaque type example above.
+
+`ids.scala` should look like this:
+
+```scala
+
+package scaladays.models
+
+import java.util.UUID
+
+import io.chrisdavenport.fuuid.FUUID
+
+object ids:
+
+  opaque type PlayerId = ???
+  opaque type GameId   = ???
+  
+```
+
+When you are done, you should be able to run:
+
+```scala
+ticTacToeRoot> common / console
+import scaladays.models.ids._
+import io.chrisdavenport.fuuid.FUUID
+import cats.effect.unsafe.implicits._
+import cats.effect.IO
+
+FUUID.randomFUUID[IO].map(PlayerId.apply(_)).unsafeRunSync
+FUUID.randomFUUID[IO].map(GameId.apply(_)).unsafeRunSync
+
+```
+
+In the sbt console. Enter `:quit` to exit.
+
+Once it works without exceptions, you can enter:
+
+```bash
+git reset --hard server-1
+```
+
+To move to the next step.
 
 #### Creating the game server
 
