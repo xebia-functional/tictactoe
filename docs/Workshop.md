@@ -1921,3 +1921,146 @@ You should get a succesful json object with a uuid formatted string
 
 Congratulations! You have just completed your first fully encoded
 http4s endpoint.
+
+##### Exercise X
+
+A key element in every event-driven architecture is the message broker 
+or message system. In this workshop, we are going to use Kafka. 
+In the initial exercises, we saw how to add the needed services to our 
+docker-compose config and run them. 
+
+Kafka functionality works around the concept of Topics and Partitions. 
+A topic can be seen as a stream of records where each record is a key-value pair. 
+Keys help in data partitioning and ordering, and Values hold the actual data. 
+
+The topics are split into multiple partitions for parallel processing and 
+scalability and the partitions are further replicated across multiple Kafka 
+brokers for fault tolerance and high availability. One unique characteristic 
+of Kafka topics is that they maintain the order of records within a partition, 
+ensuring strong ordering guarantees for the messages produced and consumed.
+
+There are multiple ways of creating topics as part of our architecture. 
+The most typical ones are:
+
+* At the infrastructure level, fulfilled as part of Kafka cluster provisioning
+* Automatically by Kafka
+* As part of our application deployment
+
+In this exercise, we're going to go with the latest one. When the application 
+starts, it will check if the needed topic exists, and if not, we create them.
+
+Open the file `modules/server/src/main/scala/scaladays/config/KafkaSetup.scala` 
+and complete the content of the `createTopicUnless` method. Then in the `bootTopics`, 
+using the `kafkaAdminClientResource`, get the list of topics and call the implemented 
+method passing the `inputTopic` (it's a field inside of the `KafkaConfiguration`).
+
+Opening the file `modules/server/src/main/scala/scaladays/Server.scala` to verify 
+that `bootTopics` is called when the server starts.
+
+##### Exercise X
+
+As you have seen, we create topics without specifying the data types. 
+Events are *serialized* when they are written to a topic and *deserialized* 
+when they are read. These operations turn binary data into the forms our 
+application understand, and vice versa. Importantly, these operations are 
+done solely by the Kafka clients.
+
+Kafka brokers, on the other hand, are agnostic to the serialization format or 
+"type" of a stored event. All they see is a pair of raw bytes for event key and 
+event value (`<byte[], byte[]>` in Java notation) coming in when being written, 
+and going out when being read. Brokers thus have no idea what’s in the data 
+they serve—it’s a black box to them. Being this “dumb” is actually pretty smart, 
+because this design decision allows brokers to scale much better than traditional 
+messaging systems.
+
+In this exercises, we're going to implement the *serializers*  and *deserializers*
+for the messages written in the topic created in the previous exercise. There is 
+no single "storage format" in Kafka. Common serialization formats used by Kafka 
+clients include Apache Avro™ (with the Confluent Schema Registry), Protobuf, and JSON.
+
+For this workshop we are going to use Apache Avro™, with the Confluent Schema Registry
+we prepared in the docker section.
+
+The input topic will receive messages of type `EventId` for the key and `TTTEvent` for the
+value. In order to develop the codecs, we're going to use [Vulcan](https://fd4s.github.io/vulcan/).
+Vulcan is a library for writing Avro codecs built on top of cats-effect.
+
+> Vulcan provides Avro schemas, encoders, and decoders between Scala types and types used 
+> by the official Apache Avro library. The aims are reduced boilerplate code and improved 
+> type safety, compared to when directly using the Apache Avro library. 
+> In particular, the following features are supported.
+> 
+> * Schemas, encoders, and decoders for many standard library types.
+> * Ability to easily create schemas, encoders, and decoders for custom types.
+> * Derivation of schemas, encoders, and decoders for case classes and sealed traits.
+
+The first thing to do is to add the Vulcan dependency. Open the `project/Dependencies.scala`
+and add the library to the server dependencies:
+
+```scala
+    "com.github.fd4s" %% "vulcan"         % Versions.vulcan,
+    "com.github.fd4s" %% "vulcan-generic" % Versions.vulcan
+```
+
+**`EventId`**
+
+The key for the input topic is `EventId`. As we saw in previous exercises, is an `opaque type`
+for the type `io.chrisdavenport.fuuid.FUUID`. To implement the Vulcan code, we're going to use
+`String` as the base type. 
+Open the file `modules/server/src/main/scala/scaladays/kafka/codecs/Codecs.scala`, and implement
+the `given VulcanCodec[EventId]` using `vulcan.Codec.string`.
+
+**`TTTEvent`**
+
+The value for the input topic is `TTTEvent`. This is a complex type, defined in the file
+`modules/server/src/main/scala/scaladays/kafka/messages/Events.scala`. Open the definition and
+take a look.
+
+As you can see, it's a case class with two fields, an `Instant` for storing when the event was
+created and a `Event`, a `sealed trait` representing all the different actions.
+
+* Login
+* Register player
+* Waiting for match
+* Start game
+* End game
+* Turn game
+* Reject event
+
+The codec is defined in the file `modules/server/src/main/scala/scaladays/kafka/codecs/Codecs.scala`.
+Open it, and, using the `StartGame` as the base, implement the rest of the `Event` subtype codecs.
+
+Once finised, take a look to the `Event` type itself, defined as a semigroup combination of the other
+subtypes. For that, we have used the `|+|` operator.
+
+##### TODO - Create a producer to submit msg to the input topic
+
+TBD
+
+##### TODO - We connect the response of the endpoint to the producing event
+
+TBD
+
+##### TODO - Monitoring into the magic ui
+
+TBD
+
+##### TODO - We have to evolve the model to incorporate the PlayerId
+
+TBD
+
+##### TODO - Introduction to the websocket
+
+TBD
+
+##### TODO - We explain the response stream
+
+TBD
+
+##### TODO - We explain the receive stream
+
+TBD
+
+##### TODO - Build
+
+TBD
