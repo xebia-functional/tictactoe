@@ -1995,7 +1995,7 @@ Vulcan is a library for writing Avro codecs built on top of cats-effect.
 > * Derivation of schemas, encoders, and decoders for case classes and sealed traits.
 
 The first thing to do is to add the Vulcan dependency. Open the `project/Dependencies.scala`
-and add the library to the common dependencies (we'll use them in both, client and server):
+and add the library to the server dependencies:
 
 ```scala
     "com.github.fd4s" %% "vulcan"         % Versions.vulcan,
@@ -2007,9 +2007,8 @@ and add the library to the common dependencies (we'll use them in both, client a
 The key for the input topic is `EventId`. As we saw in previous exercises, is an `opaque type`
 for the type `io.chrisdavenport.fuuid.FUUID`. To implement the Vulcan code, we're going to use
 `String` as the base type. 
-Open the file `modules/common/shared/src/main/scala/scaladays/models/ids.scala` where the `EventId`
-type is defined, and implement the `given VulcanCodec[EventId]` in the companion object, using 
-`vulcan.Codec.string`.
+Open the file `modules/server/src/main/scala/scaladays/kafka/codecs/Codecs.scala`, and implement
+the `given VulcanCodec[EventId]` using `vulcan.Codec.string`.
 
 **`TTTEvent`**
 
