@@ -1799,3 +1799,125 @@ git reset --hard client-1
 ```
 
 in your terminal to move on to the next step.
+
+### Client step goes here.
+
+
+#### Creating the game server -- Login Endpoint
+
+Now that we have a client, we need to add a login endpoint to register
+players so they can look for games to join. This will be the last
+non-streaming endpoint we will be adding to the server.
+
+In http4s servers, it is typical to separate groups of routes with
+similar purposes into different service objects, then compose them
+into a full server with `combineK` (symbolic operator `<+>`). You
+already have a service in `HealthCheck` that you can use to check if
+your server is listening for web traffic. According to convention you
+now need to create a set of routes under a `WebServer` object.
+
+##### Exercise ??
+
+This is also the first time you will be building an endpoint that
+accepts data from the client and sends data back to the client. As
+this data not part of the game domain that you just built and is used
+only in http requests used to initialize game models, a new group of
+domain models has been added to the `common` subproject.
+
+When a user logs into the game server, they send a `Nickname` to
+identify themselves as a `PATCH` request to `/login`. The `Nickname`
+is modeled as an opaque string in `ids.scala`, similar to how `GameId`
+and `PlayerId` were modeled as opaque types before. However, since it
+is sent through http as a `String`, you need a way to encode and decode
+the `String` nickname into the opaque `Nickname` type at runtime.
+
+You will handle this with json encoding. http4s integrates well with
+the [circe](https://circe.github.io/circe/) scala json library.
+
+Circe json codecs are made of `Encoder[A]` and `Decoder[A]`
+traits. The `Encoder` encodes objects of type `A` into json, and the
+`Decoder` attempts to decode json into an `Either[DecodingFailure,
+A]`.
+
+Circe comes with several built-in `Encoders` and `Decoders`. These
+exist in `io.Circe.Encoder` and `io.Circe.Decoder`, respectively.
+
+The decoder for `String`s is `decodeString`. However, that will only
+decode strings. To make decoders of type `A` into a decoder of any
+other type `B` while preserving `DecodingFailure`s, circe `Decoder`s
+have a method, `emap` that takes a function `A => Either[String,
+B]`. Errors in the function can be reported by returning a `Left` in
+the function containing an error message.
+
+The encoder for `String`s is `encodeString`.
+
+Recall that opaque types can freely convert between the type they are
+modeling within the same file they are declared within.
+
+Open
+`modules/common/shared/src/main/scala/scaladays/models/ids.scala`. Using
+the provided `CirceEncoder` and `CirceDecoder` import aliases,
+complete the encoder and decoder for `Nickname` and save the file.
+
+Scala 3 also added the ability to derive instances of typeclasses like
+`Encoder` and `Decoder`. This ability is provided in
+`io.circe.generic.semiauto`. As long as encoders and decoders exist in
+implicit scope for all the types of a datatype, they can be derived
+using `deriveEncoder` and `deriveDecoder`, respectively.
+
+Now, open `modules/common/shared/src/main/scala/scaladays/models/http.scala`.
+
+In the `Login` object, derive the encoder and decoder for `Login`, and
+save the file.
+
+Finally, note that we have also added a `LoginResponse` model
+containing a `PlayerId`, and that its encoders and decoders are
+already completed.
+
+Finally, you are ready to complete the login endpoint in
+`modules/server/src/main/scala/scaladays/server/WebServer.scala`.
+
+Http requests are modeled as pattern match extractors in http4s. The
+match for `/login` is bound to the `req` value as a `Request[F]`. The
+`as[A]` method will create an http entity decoder from the data in the
+http request body, which in this case is json, from the json decoder
+for the type (using the given/implicits provided in the
+`org.http4s.circe.*` import) in the effect type `F[_]`. This decoded
+type then needs to return a new `LoginResponse`. To do that, you will
+need to use the `PlayerId.apply[F[_]: Sync](): F[PlayerId]` method
+that was added in `ids` via the last commit. `PlayerId()` will create
+a new random uuid in `F[_]`. Then you will need to pass the id to a
+LoginResponse object in an `Ok` response, like you did for the `/ping`
+healthcheck endpoint.
+
+Because all of these things occur within `F[_]` and `F[_]` is an
+`Async`, which extends `Monad`, you will need to use `flatMap` to
+chain the incompleted transformations described above together.
+Complete the transformations and save the file.
+
+You can verify that you have completed the task correctly by running:
+
+```scala
+dockerComposeUp
+```
+
+in the sbt console, opening your browser, opening the developer
+console in the browser, and entering:
+
+```javascript
+fetch('http://localhost:28082/login', {
+  method: 'PATCH',
+  body: JSON.stringify("testName"),
+  headers: {
+    'Content-type': 'application/json; charset=UTF-8'
+  }
+})
+.then(res => res.json())
+.then(console.log)
+```
+
+You should get a succesful json object with a uuid formatted string
+`id` field in the developer console logs.
+
+Congratulations! You have just completed your first fully encoded
+http4s endpoint.
