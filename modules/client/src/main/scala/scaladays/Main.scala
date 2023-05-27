@@ -24,6 +24,9 @@ object Main extends TyrianApp[Msg, ModelIO]:
   def update(model: ModelIO): Msg => (ModelIO, Cmd[IO, Msg]) =
     updateAlg.update(model)
 
-  def view(model: ModelIO): Html[Msg] = ???
+  def view(model: ModelIO): Html[Msg] =
+    model match
+      case Model(nickname) =>
+        MainView.mainScreen(nickname)
 
   def subscriptions(model: ModelIO): Sub[IO, Msg] = Sub.None
