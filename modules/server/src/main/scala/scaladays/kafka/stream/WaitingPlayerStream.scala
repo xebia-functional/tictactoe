@@ -31,8 +31,15 @@ object WaitingPlayerStream:
         .to(kfg.topics.playerTopic)
 
     def deletePlayersAfterCreateMatch(): Unit =
-      // TODO
-      ???
+      builder
+        .stream[EventId, TTTEvent](kfg.topics.inputTopic)
+        .flatMap[PlayerId, PlayerId] {
+          case (_, TTTEvent(_, StartGame(_, playerId1, playerId2))) =>
+            List((playerId1, null.asInstanceOf[PlayerId]), (playerId2, null.asInstanceOf[PlayerId]))
+          case _ =>
+            List.empty[(PlayerId, PlayerId)]
+        }
+        .to(kfg.topics.playerTopic)
 
     def playerToMatchStream(storeName: String): Unit =
       val store = instances.keyValueStore[String, PlayerId](storeName)
