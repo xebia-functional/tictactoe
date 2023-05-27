@@ -75,6 +75,24 @@ services:
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,PLAINTEXT://kafka-3:9092'
+  server:
+    image: "127.0.0.1:${SCALADAYS_WORKSHOP_DOCKER_REGISTRY_HOST_PORT?Cannot find host port}/scaladays-workshop-2023-server:latest"
+    platform: linux/amd64
+    hostname: scaladays-workshop-2023-server
+    restart: always
+    environment:
+      ROOT_LOG_LEVEL: ERROR
+    ports:
+      - "28082:8082"
+      - "28083:8085"
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - schema-registry
   magic:
     image: "digitsy/kafka-magic"
     ports:
@@ -95,5 +113,14 @@ services:
       KMAGIC_CONFIG_STORE_TYPE: "file"
       KMAGIC_CONFIG_STORE_CONNECTION: "Data Source=/config/KafkaMagicConfig.db;"
       KMAGIC_CONFIG_ENCRYPTION_KEY: "ENTER_YOUR_KEY_HERE"
+  client:
+    image: "lipanski/docker-static-website:latest"
+    ports:
+      - 23000:3000
+    depends_on:
+      - server
+    volumes:
+      - ${SCALADAYS_CLIENT_DIST?Cannot find scaladays client distribution}:/home/static
 volumes:
   myConfig:
+    
