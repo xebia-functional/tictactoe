@@ -15,7 +15,9 @@ object Server:
     for
       configService <- fs2.Stream.eval(ConfigurationService.impl)
       stream        <- fs2.Stream.eval(
-                         // TODO - Use configService.httpServer to start an http app
-                         // Find a way to keep the stream running
+                         configService.httpServer
+                           .withHttpApp(HealthCheck.healthService.orNotFound)
+                           .build
+                           .use(_ => Async[F].never[ExitCode])
                        )
     yield stream
