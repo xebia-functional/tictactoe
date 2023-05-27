@@ -15,7 +15,9 @@ object Server:
     for
       configService <- fs2.Stream.eval(ConfigurationService.impl)
       _ <- fs2.Stream.eval(KafkaSetup.impl(configService.config.kafka).bootTopics())
-      routes = WebServer.routes(TTTServer.impl[F]())
+      backend = Backend.impl[F](configService.config, configService.schemaRegistrySettings)
+      ttt <- fs2.Stream.resource(backend.tttServer)
+      routes = WebServer.routes(ttt)
       stream        <- fs2.Stream.eval(
                          configService.httpServer
                            .withHttpApp((HealthCheck.healthService <+> routes).orNotFound)

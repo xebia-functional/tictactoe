@@ -96,6 +96,14 @@ object Codecs:
     ] |+| alt[TurnGame] |+| alt[RegisterPlayer] |+| alt[RejectEvent]
   }
 
+  given tttEventCodec: Codec[TTTEvent] =
+    Codec.record(name = "TTTEvent", namespace = eventsNamespace) { field =>
+      (
+        field("time", _.time),
+        field("event", _.event)
+      ).mapN(TTTEvent.apply)
+    }
+
   given pieceCodec: Codec[Piece] = Codec.enumeration[Piece](
     name = "Piece",
     eventsNamespace,
@@ -119,4 +127,32 @@ object Codecs:
         field("x", _.x),
         field("y", _.y)
       ).mapN(Position.apply)
+    }
+
+  given movementCodec: Codec[Movement] =
+    Codec.record(name = "Movement", namespace = gameNamespace) { field =>
+      (
+        field("position", _.position),
+        field("piece", _.piece),
+        field("confirmed", _.confirmed)
+      ).mapN(Movement.apply)
+    }
+
+  given matchCodec: Codec[Game] =
+    Codec.record(name = "Game", namespace = gameNamespace) { field =>
+      (
+        field("gameId", _.gameId),
+        field("crossPlayer", _.crossPlayer),
+        field("circlePlayer", _.circlePlayer),
+        field("state", _.state),
+        field("movements", _.movements)
+      ).mapN(Game.apply)
+    }
+
+  given aggregationCodec[A, B](using codecA: Codec[A], codecB: Codec[B]): Codec[AggMessage[A, B]] =
+    Codec.record(name = "Aggregation", namespace = gameNamespace) { field =>
+      (
+        field("a", _.a),
+        field("b", _.b)
+      ).mapN(AggMessage.apply)
     }
