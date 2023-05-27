@@ -1,6 +1,6 @@
 package scaladays
 
-import scaladays.config.ConfigurationService
+import scaladays.config.{ConfigurationService, KafkaSetup}
 import scaladays.server.*
 import cats.effect.{Async, ExitCode, Resource}
 import cats.implicits.*
@@ -14,6 +14,7 @@ object Server:
   def serve[F[_]: Async: Logger]: fs2.Stream[F, ExitCode] =
     for
       configService <- fs2.Stream.eval(ConfigurationService.impl)
+      _ <- fs2.Stream.eval(KafkaSetup.impl(configService.config.kafka).bootTopics())
       routes = WebServer.routes(TTTServer.impl[F]())
       stream        <- fs2.Stream.eval(
                          configService.httpServer
