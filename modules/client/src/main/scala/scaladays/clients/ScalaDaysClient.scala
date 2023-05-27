@@ -2,7 +2,7 @@ package scaladays.clients
 
 import scaladays.models.http.{JoinGame, Login, LoginResponse, Turn}
 import scaladays.models.ids.{GameId, Nickname, PlayerId}
-import scaladays.models.*
+import scaladays.models.{InvalidNickname, NotFoundNickname, UnexpectedServerError, *}
 import cats.effect.Async
 import cats.implicits.*
 import org.http4s.Method.PATCH
@@ -35,5 +35,15 @@ object ScalaDaysClient:
     lazy val client = FetchClientBuilder[F].create
 
     override def getLogin(nickname: Nickname): Cmd[F, Msg] =
-      // TODO
-      ???
+      Cmd.Run(
+        if nickname.value == "" then Msg.LoginError(InvalidNickname).pure[F]
+        else
+          client
+            .expectOption[LoginResponse](
+              req = Request(uri = httpUri / "login", method = PATCH).withEntity(Login(nickname))
+            )
+            .map {
+              case Some(LoginResponse(playerId)) => Msg.LoginSuccess(playerId)
+              case None => Msg.LoginError(NotFoundNickname)
+            }.recover(err => Msg.LoginError(UnexpectedServerError(err.getMessage)))
+      )(identity)

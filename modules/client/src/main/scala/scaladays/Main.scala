@@ -28,7 +28,19 @@ object Main extends TyrianApp[Msg, ModelIO]:
 
   def view(model: ModelIO): Html[Msg] =
     model match
-      case Model(nickname) =>
+      case Model(nickname, Player.Empty, Nil) =>
         MainView.mainScreen(nickname)
+
+      case Model(nickname, Player.Empty, errors) =>
+        MainView.errorMainScreen(nickname, errors)
+
+      case Model(nickname, Player.Waiting, _) =>
+        MainView.waitingLoginScreen(nickname)
+
+      case Model(nickname, Player.Registered(_), _) =>
+        MainView.readyScreen(nickname)
+
+      case model =>
+        MainView.errorScreen(model)
 
   def subscriptions(model: ModelIO): Sub[IO, Msg] = Sub.None

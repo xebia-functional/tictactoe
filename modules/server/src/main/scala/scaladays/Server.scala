@@ -21,7 +21,10 @@ object Server:
       routes = WebServer.routes(ttt)
       stream        <- fs2.Stream.eval(
                          configService.httpServer
-                           .withHttpApp((HealthCheck.healthService <+> routes).orNotFound)
+                           .withHttpApp(
+                             CORS.policy.withAllowOriginAll.withAllowCredentials(false).apply(
+                               (HealthCheck.healthService <+> routes).orNotFound)
+                           )
                            .build
                            .use(_ => Async[F].never[ExitCode])
                        )
