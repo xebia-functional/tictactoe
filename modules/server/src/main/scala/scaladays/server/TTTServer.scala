@@ -12,6 +12,8 @@ trait TTTServer[F[_]]:
 
   def login(nickname: Nickname): F[PlayerId]
 
+  def processClientAction(clientAction: ClientAction): F[Unit]
+
   def response(playerId: PlayerId): fs2.Stream[F, Game]
 
 object TTTServer:
@@ -32,4 +34,8 @@ object TTTServer:
       override def response(playerId: PlayerId): fs2.Stream[F, Game] =
         eventHandler.processEvent(playerId)
 
+      override def processClientAction(clientAction: ClientAction): F[Unit] =
+        clientAction match
+          case JoinGame(playerId)                      =>
+            eventStorage.waitForMatch(playerId).void
 
