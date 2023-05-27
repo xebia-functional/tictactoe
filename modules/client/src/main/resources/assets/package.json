@@ -1,0 +1,12 @@
+{
+  "scripts": {
+			"build": "mkdir -p ./dist/lib && ./node_modules/.bin/sass -I ./node_modules/bootstrap/scss/bootstrap.scss --error-css --style compressed ./scss/custom.scss ./dist/css/custom.css && mv ./lib/main.js ./dist/lib/main.js && mv ./index.html ./dist/index.html && mv ./tyrianapp.js ./dist/lib/tyrianapp.js"
+  },
+  "devDependencies": {
+    "sass": "^1.62.1"
+  },
+  "dependencies": {
+    "bootstrap": "^5.2.3",
+    "popper.js": "^1.16.1"
+  }
+}

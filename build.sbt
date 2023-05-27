@@ -265,7 +265,6 @@ lazy val tttClient =
   project
     .in(file("modules/client"))
     .enablePlugins(ScalaJSPlugin)
-    .settings(scalaJSUseMainModuleInitializer := true)
     .settings(
       name := "scaladays-workshop-2023-client",
       resolvers += "http4s" at "https://mvnrepository.com/artifact/org.http4s/http4s-dom",
