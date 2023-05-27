@@ -14,10 +14,10 @@ object Server:
   def serve[F[_]: Async: Logger]: fs2.Stream[F, ExitCode] =
     for
       configService <- fs2.Stream.eval(ConfigurationService.impl)
+      routes = WebServer.routes(TTTServer.impl[F]())
       stream        <- fs2.Stream.eval(
                          configService.httpServer
-                           // TODO - Add WebServer routes
-                           .withHttpApp(HealthCheck.healthService.orNotFound)
+                           .withHttpApp((HealthCheck.healthService <+> routes).orNotFound)
                            .build
                            .use(_ => Async[F].never[ExitCode])
                        )
