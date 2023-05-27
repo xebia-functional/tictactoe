@@ -34,19 +34,38 @@ object KafkaSetup:
         topicName: String,
         numPartitions: Int,
         numReplicas: Int): F[Unit] =
-      // TODO
-      ???
+      val topic = new ConfigResource(ConfigResource.Type.TOPIC, topicName)
+      for
+        _ <- createTopicUnless(client, topics, topicName, numPartitions, numReplicas)
+        _ <- client.alterConfigs {
+               Map(
+                 topic -> List(
+                   new AlterConfigOp(
+                     new ConfigEntry("cleanup.policy", "compact"),
+                     AlterConfigOp.OpType.SET
+                   )
+                 )
+               )
+             }
+      yield ()
 
     override def bootTopics(): F[Unit] =
       kafkaAdminClientResource.use { client =>
         for
           names <- client.listTopics.names
-          _ <- createTopicUnless(
-            client,
-            names,
-            kafkaConfiguration.topics.inputTopic,
-            kafkaConfiguration.numPartitions,
-            kafkaConfiguration.replicationFactor
-          )
+          _     <- createTopicUnless(
+                     client,
+                     names,
+                     kafkaConfiguration.topics.inputTopic,
+                     kafkaConfiguration.numPartitions,
+                     kafkaConfiguration.replicationFactor
+                   )
+          _     <- createCompactedTopicUnless(
+                     client,
+                     names,
+                     kafkaConfiguration.topics.playerTopic,
+                     kafkaConfiguration.numPartitions,
+                     kafkaConfiguration.replicationFactor
+                   )
         yield ()
       }
