@@ -16,6 +16,8 @@ trait KafkaFacade[F[_]]:
 
   def eventStorage: EventStorage[F]
 
+  def eventHandler: EventHandler[F]
+
   def loginStorage: LoginStorage[F]
 
 object KafkaFacade:
@@ -32,6 +34,12 @@ object KafkaFacade:
                          conf.clientId,
                          conf.topics.inputTopic
                        )
+      consumer       = Consumer.impl[F, GameId, Game](
+                         conf.uri,
+                         avroSettings,
+                         conf.topics.gameTopic,
+                         conf.groupId
+                       )
       serdes        <- Resource.eval(VulcanSerdes.build[F](avroSettings, dispatcher))
       kTopology      = KTopology.impl(builder, conf, serdes)
       kafkaStreams  <- kTopology.buildTopology
@@ -39,6 +47,8 @@ object KafkaFacade:
     yield new KafkaFacade[F]:
 
       override lazy val eventStorage: EventStorage[F] = EventStorage.impl(producer)
+
+      override lazy val eventHandler: EventHandler[F] = EventHandler.impl(consumer)
 
       override lazy val loginStorage: LoginStorage[F] =
         LoginStorage.impl(playerStorage, eventStorage)
