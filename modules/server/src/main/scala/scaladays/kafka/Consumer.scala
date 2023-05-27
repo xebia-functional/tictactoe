@@ -24,7 +24,9 @@ private[kafka] object Consumer:
         ConsumerSettings[F, K, V](
           avroDeserializer[K].using(schemaRegistrySettings),
           avroDeserializer[V].using(schemaRegistrySettings)
-        ).withBootstrapServers(brokerAddress).withClientId(clientId).withAutoOffsetReset(
+        ).withBootstrapServers(brokerAddress).withClientId(clientId).withGroupId(
+            s"$groupId-$clientId"
+          ).withAutoOffsetReset(
             AutoOffsetReset.Latest
           )
 
