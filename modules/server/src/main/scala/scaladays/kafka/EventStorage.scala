@@ -30,9 +30,17 @@ object EventStorage:
 
   def impl[F[_]: Async](producer: Producer[F, EventId, TTTEvent]): EventStorage[F] = new EventStorage[F]:
 
+    private def toEvent(event: Event): F[(EventId, TTTEvent)] =
+      for
+        fd <- Async[F].monotonic
+        eId <- EventId()
+      yield (eId, TTTEvent(Instant.ofEpochMilli(fd.toMillis), event))
+
     private def sendEvent(event: Event): F[EventId] =
-      // TODO
-      ???
+      for
+        (eId, event) <- toEvent(event)
+        _ <- producer.sendMessage(eId, event)
+      yield eId
 
     override def login(nickname: Nickname): F[EventId] =
       sendEvent(Login(nickname))
