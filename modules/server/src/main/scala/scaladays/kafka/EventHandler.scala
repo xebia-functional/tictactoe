@@ -15,4 +15,8 @@ object EventHandler:
 
   def impl[F[_]: Async](consumer: Consumer[F, GameId, Game]): EventHandler[F] = new EventHandler[F]:
 
-    override def processEvent(playerId: PlayerId): fs2.Stream[F, Game] = ???
+    override def processEvent(playerId: PlayerId): fs2.Stream[F, Game] =
+      consumer.consumer(s"group-id-${playerId.show}") { case (_, game) =>
+        if playerId == game.crossPlayer || playerId == game.circlePlayer then game.some.pure[F]
+        else None.pure[F]
+      }

@@ -19,8 +19,6 @@ import org.http4s.websocket.WebSocketFrame
 import fs2.Stream
 import org.typelevel.log4cats.Logger
 
-import scala.concurrent.duration.*
-
 object WebServer:
 
   def routes[F[_]: Async: Logger](
@@ -38,7 +36,7 @@ object WebServer:
       case WebSocketFrame.Close(_)       => Logger[F].info(s"Close connection for player $playerId")
 
     def sendResponse(playerId: PlayerId): fs2.Stream[F, WebSocketFrame] =
-      fs2.Stream.awakeEvery(500.millis).map(_ => WebSocketFrame.Text("pong"))
+      ticTacToe.response(playerId).map[WebSocketFrame](game => WebSocketFrame.Text(game.asJson.noSpacesSortKeys))
 
     val dsl = new Http4sDsl[F] {}
     import dsl.*
