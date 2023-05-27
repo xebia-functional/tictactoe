@@ -10,4 +10,11 @@ trait Update[F[_]]:
 
 object Update:
 
-  def impl[F[_]: Async](): Update[F] = ???
+  def impl[F[_]: Async](): Update[F] = new Update[F]:
+
+    override def update(model: Model[F]): Msg => (Model[F], Cmd[F, Msg]) =
+      case Msg.UpdateNickname(nickname) =>
+        (model.copy(nickname = nickname), Cmd.None)
+
+      case _ =>
+        (model, Logger.debug("Erm"))

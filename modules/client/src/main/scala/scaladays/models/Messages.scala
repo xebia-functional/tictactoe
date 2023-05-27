@@ -1,4 +1,6 @@
 package scaladays.models
 
+import scaladays.models.ids.Nickname
+
 enum Msg:
-  case REPLACE_ME
+  case UpdateNickname(nickname: Nickname)
