@@ -1,5 +1,5 @@
 <configuration>
-	  <variable name="ROOT_LOG_LEVEL" value="${ROOT_LOG_LEVEL:-ERROR}" />
+	  <variable name="ROOT_LOG_LEVEL" value="${ROOT_LOG_LEVEL:-INFO}" />
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- On Windows machines setting withJansi to true enables ANSI
              color code interpretation by the Jansi library. This requires
