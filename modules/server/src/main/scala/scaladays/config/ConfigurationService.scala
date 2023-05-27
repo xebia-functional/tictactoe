@@ -28,6 +28,8 @@ trait ConfigurationService[F[_]]:
 
   def schemaRegistrySettings: AvroSettings[F]
 
+  def builder: Resource[F, StreamsBuilder]
+
 object ConfigurationService:
 
   def impl[F[_]: Async: Logger]: F[ConfigurationService[F]] =
@@ -63,3 +65,7 @@ object ConfigurationService:
         conf.http.server
       )
       override lazy val schemaRegistrySettings: AvroSettings[F] = settings
+      override lazy val builder: Resource[F, StreamsBuilder]    =
+        Resource.eval(
+          Async[F].delay(new StreamsBuilder())
+        )

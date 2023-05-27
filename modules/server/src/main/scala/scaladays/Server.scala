@@ -14,8 +14,9 @@ object Server:
   def serve[F[_]: Async: Logger]: fs2.Stream[F, ExitCode] =
     for
       configService <- fs2.Stream.eval(ConfigurationService.impl)
+      builder <- fs2.Stream.resource(configService.builder)
       _ <- fs2.Stream.eval(KafkaSetup.impl(configService.config.kafka).bootTopics())
-      backend = Backend.impl[F](configService.config, configService.schemaRegistrySettings)
+      backend = Backend.impl[F](configService.config, builder, configService.schemaRegistrySettings)
       ttt <- fs2.Stream.resource(backend.tttServer)
       routes = WebServer.routes(ttt)
       stream        <- fs2.Stream.eval(

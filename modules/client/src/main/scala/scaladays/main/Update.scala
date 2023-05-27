@@ -1,6 +1,7 @@
 package scaladays.main
 
 import cats.effect.Async
+import scaladays.clients.ScalaDaysClient
 import scaladays.models.*
 import tyrian.Cmd
 import tyrian.cmds.Logger
@@ -10,7 +11,7 @@ trait Update[F[_]]:
 
 object Update:
 
-  def impl[F[_]: Async](): Update[F] = new Update[F]:
+  def impl[F[_]: Async](scalaDaysClient: ScalaDaysClient[F]): Update[F] = new Update[F]:
 
     override def update(model: Model[F]): Msg => (Model[F], Cmd[F, Msg]) =
       case Msg.UpdateNickname(nickname) =>
