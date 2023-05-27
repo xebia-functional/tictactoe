@@ -5,6 +5,7 @@ import scaladays.models.*
 import scaladays.views.*
 import cats.effect.IO
 import cats.effect.IO.asyncForIO
+import scaladays.clients.ScalaDaysClient
 import tyrian.Html.*
 import tyrian.*
 import tyrian.cmds.*
@@ -16,7 +17,8 @@ type ModelIO = Model[IO]
 @JSExportTopLevel("TyrianApp")
 object Main extends TyrianApp[Msg, ModelIO]:
 
-  lazy val updateAlg: Update[IO] = Update.impl[IO]()
+  lazy val scalaDaysClient: ScalaDaysClient[IO] = ScalaDaysClient.impl("localhost", 28082)
+  lazy val updateAlg: Update[IO] = Update.impl[IO](scalaDaysClient)
 
   def init(flags: Map[String, String]): (ModelIO, Cmd[IO, Msg]) =
     (Model.init, Cmd.None)
