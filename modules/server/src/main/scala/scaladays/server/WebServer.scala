@@ -31,7 +31,7 @@ object WebServer:
       case WebSocketFrame.Text((str, _)) =>
         decode[ClientAction](str).fold(
           err => Logger[F].error(s"Message of player: $playerId cannot be processed: ${err.getMessage}"),
-          _ => ().pure[F]
+          action => ticTacToe.processClientAction(action)
         )
       case WebSocketFrame.Close(_)       => Logger[F].info(s"Close connection for player $playerId")
 
