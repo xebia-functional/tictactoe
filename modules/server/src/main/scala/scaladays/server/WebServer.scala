@@ -30,7 +30,11 @@ object WebServer:
     given EntityEncoder[F, LoginResponse] = jsonEncoderOf[LoginResponse]
 
     def processClientMessage(playerId: PlayerId, webSocketFrame: WebSocketFrame): F[Unit] = webSocketFrame match
-      case WebSocketFrame.Text((str, _)) => Logger[F].info(s"Received $str for player $playerId")
+      case WebSocketFrame.Text((str, _)) =>
+        decode[ClientAction](str).fold(
+          err => Logger[F].error(s"Message of player: $playerId cannot be processed: ${err.getMessage}"),
+          _ => ().pure[F]
+        )
       case WebSocketFrame.Close(_)       => Logger[F].info(s"Close connection for player $playerId")
 
     def sendResponse(playerId: PlayerId): fs2.Stream[F, WebSocketFrame] =
@@ -43,7 +47,7 @@ object WebServer:
         req.as[Login].flatMap(loginReq => ticTacToe.login(loginReq.nickname)).flatMap(pId => Ok(LoginResponse(pId)))
 
       case GET -> Root / "player" / PlayerId(playerId) / "join" =>
-        val send: fs2.Stream[F, WebSocketFrame] = sendResponse(playerId)
+        val send: fs2.Stream[F, WebSocketFrame]        = sendResponse(playerId)
         val receive: fs2.Pipe[F, WebSocketFrame, Unit] =
           in => in.evalMap(processClientMessage(playerId, _))
         ws.build(send, receive)
