@@ -60,3 +60,40 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181,zookeeper-3:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092
       KAFKA_JMX_PORT: 9998
+  schema-registry:
+    image: "confluentinc/cp-schema-registry:6.2.0"
+    hostname: schema-registry
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,???'
+  magic:
+    image: "digitsy/kafka-magic"
+    ports:
+      - "29080:80"
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+      - kafka-1
+      - kafka-2
+      - kafka-3
+      - schema-registry
+    volumes:
+      - myConfig:/config
+    environment:
+      KMAGIC_ALLOW_TOPIC_DELETE: "true"
+      KMAGIC_ALLOW_SCHEMA_DELETE: "true"
+      KMAGIC_CONFIG_STORE_TYPE: "file"
+      KMAGIC_CONFIG_STORE_CONNECTION: "Data Source=/config/KafkaMagicConfig.db;"
+      KMAGIC_CONFIG_ENCRYPTION_KEY: "ENTER_YOUR_KEY_HERE"
+volumes:
+  myConfig:
