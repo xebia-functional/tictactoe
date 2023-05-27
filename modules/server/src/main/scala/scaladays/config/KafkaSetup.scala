@@ -28,6 +28,15 @@ object KafkaSetup:
         client.createTopic(new NewTopic(topicName, numPartitions, numReplicas.toShort))
       )
 
+    def createCompactedTopicUnless(
+        client: KafkaAdminClient[F],
+        topics: Set[String],
+        topicName: String,
+        numPartitions: Int,
+        numReplicas: Int): F[Unit] =
+      // TODO
+      ???
+
     override def bootTopics(): F[Unit] =
       kafkaAdminClientResource.use { client =>
         for

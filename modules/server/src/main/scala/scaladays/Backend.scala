@@ -26,4 +26,4 @@ object Backend:
         KafkaFacade.impl(configuration.kafka, builder, schemaRegistrySettings)
 
       override lazy val tttServer: Resource[F, TTTServer[F]] =
-        kafkaFacade.map(kFacade => TTTServer.impl(kFacade.eventStorage, kFacade.loginStorage))
+        kafkaFacade.map(kFacade => TTTServer.impl(kFacade.eventStorage, kFacade.eventHandler, kFacade.loginStorage))
