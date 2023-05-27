@@ -19,9 +19,8 @@ object Codecs:
 
   private val gameNamespace = "game"
 
-  given uuidCodec: Codec[FUUID] = 
-    // TODO - Build uuidCodec using Codec.string
-    ???
+  given uuidCodec: Codec[FUUID] =
+    Codec.string.imap[FUUID](x => FUUID.fromString(x).toOption.get)(_.show)
 
   given eventIdCodec: Codec[EventId] =
     uuidCodec.imap[EventId](EventId.apply)(_.value)
@@ -41,8 +40,9 @@ object Codecs:
     )
 
   given waitingForMatchCodec: Codec[WaitingForMatch] =
-    // TODO
-    ???
+    Codec.record(name = "WaitingForMatch", namespace = eventsNamespace)(
+      _("playerId", _.playerId).map(WaitingForMatch.apply)
+    )
 
   given startMatchCodec: Codec[StartGame] =
     Codec.record(name = "StartMatch", namespace = eventsNamespace) { field =>
@@ -54,20 +54,41 @@ object Codecs:
     }
 
   given endMatchCodec: Codec[EndGame] =
-  // TODO
-    ???
+    Codec.record(name = "EndMatch", namespace = eventsNamespace) { field =>
+      (
+        field("gameId", _.gameId),
+        field("crossPlayer", _.crossPlayer),
+        field("circlePlayer", _.circlePlayer),
+        field("gameState", _.gameState)
+      ).mapN(EndGame.apply)
+    }
 
   given turnMatchCodec: Codec[TurnGame] =
-  // TODO
-    ???
+    Codec.record(name = "TurnMatch", namespace = eventsNamespace) { field =>
+      (
+        field("gameId", _.gameId),
+        field("playerId", _.playerId),
+        field("position", _.position),
+        field("piece", _.piece)
+      ).mapN(TurnGame.apply)
+    }
 
   given registerPlayerCodec: Codec[RegisterPlayer] =
-  // TODO
-    ???
+    Codec.record(name = "RegisterPlayer", namespace = eventsNamespace) { field =>
+      (
+        field("playerId", _.playerId),
+        field("nickname", _.nickname)
+      ).mapN(RegisterPlayer.apply)
+    }
 
   given rejectEventCodec: Codec[RejectEvent] =
-  // TODO
-    ???
+    Codec.record(name = "RejectEvent", namespace = eventsNamespace) { field =>
+      (
+        field("playerId", _.playerId),
+        field("rejectEventId", _.rejectEventId),
+        field("reason", _.reason)
+      ).mapN(RejectEvent.apply)
+    }
 
   given eventCodec: Codec[Event] = Codec.union[Event] { alt =>
     alt[Login] |+| alt[WaitingForMatch] |+| alt[StartGame] |+| alt[
@@ -83,10 +104,19 @@ object Codecs:
     str => Piece.values.toList.find(_.toString === str).toRight(AvroError(s"Can't decode Piece with value: $str"))
   )
 
-  given gameStateCodec: Codec[GameState] =
-  // TODO
-    ???
+  given gameStateCodec: Codec[GameState] = Codec.enumeration[GameState](
+    name = "GameState",
+    gameNamespace,
+    GameState.values.map(_.toString),
+    _.toString,
+    str =>
+      GameState.values.toList.find(_.toString === str).toRight(AvroError(s"Can't decode GameState with value: $str"))
+  )
 
   given positionCodec: Codec[Position] =
-  // TODO
-    ???
+    Codec.record(name = "Position", namespace = gameNamespace) { field =>
+      (
+        field("x", _.x),
+        field("y", _.y)
+      ).mapN(Position.apply)
+    }

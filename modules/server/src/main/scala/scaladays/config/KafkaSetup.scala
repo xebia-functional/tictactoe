@@ -23,8 +23,21 @@ object KafkaSetup:
         topics: Set[String],
         topicName: String,
         numPartitions: Int,
-        numReplicas: Int): F[Unit] = ???
+        numReplicas: Int): F[Unit] =
+      Async[F].unlessA(topics.contains(topicName))(
+        client.createTopic(new NewTopic(topicName, numPartitions, numReplicas.toShort))
+      )
 
     override def bootTopics(): F[Unit] =
-      // TODO Using kafkaAdminClientResource call to createTopicUnless for inputTopic
-      ???
+      kafkaAdminClientResource.use { client =>
+        for
+          names <- client.listTopics.names
+          _ <- createTopicUnless(
+            client,
+            names,
+            kafkaConfiguration.topics.inputTopic,
+            kafkaConfiguration.numPartitions,
+            kafkaConfiguration.replicationFactor
+          )
+        yield ()
+      }

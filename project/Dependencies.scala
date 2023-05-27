@@ -73,7 +73,9 @@ object Dependencies {
       fs2Core,
       fs2IO,
       log4Cats,
-      logBack
+      logBack,
+      "com.github.fd4s" %% "vulcan" % Versions.vulcan,
+      "com.github.fd4s" %% "vulcan-generic" % Versions.vulcan
     ) ++ http4sDeps ++ kafkaDeps
   }
 
