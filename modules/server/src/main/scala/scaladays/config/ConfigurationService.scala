@@ -7,10 +7,17 @@ import cats.effect.std.Dispatcher
 import cats.effect.{Async, Resource}
 import cats.implicits.*
 
+import org.apache.kafka.clients.admin.{AlterConfigOp, ConfigEntry, NewTopic}
+import org.apache.kafka.common.config.ConfigResource
+import org.apache.kafka.streams.scala.StreamsBuilder
+import org.apache.kafka.streams.state.KeyValueStore
+
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.{Response, Status}
 
 import com.comcast.ip4s.{Host, Port}
+import fs2.kafka.vulcan.{AvroSettings, SchemaRegistryClientSettings}
+import fs2.kafka.{AdminClientSettings, KafkaAdminClient}
 import org.typelevel.log4cats.Logger
 
 trait ConfigurationService[F[_]]:
@@ -18,6 +25,8 @@ trait ConfigurationService[F[_]]:
   def config: Configuration
 
   def httpServer: EmberServerBuilder[F]
+
+  def schemaRegistrySettings: AvroSettings[F]
 
 object ConfigurationService:
 
@@ -44,8 +53,13 @@ object ConfigurationService:
 
     for
       conf     <- SetupConfiguration.loadConfiguration[F, Configuration]
+      settings <- SchemaRegistryClientSettings[F](conf.kafka.schemaRegistry.uri)
+                    .withMaxCacheSize(conf.kafka.schemaRegistry.cacheSize)
+                    .createSchemaRegistryClient
+                    .map(AvroSettings(_))
     yield new ConfigurationService[F]:
       override lazy val config: Configuration                   = conf
       override lazy val httpServer: EmberServerBuilder[F]       = bootServer(
         conf.http.server
       )
+      override lazy val schemaRegistrySettings: AvroSettings[F] = settings
