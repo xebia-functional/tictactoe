@@ -4,6 +4,7 @@ import scaladays.models.http.*
 import scaladays.models.ids.*
 import cats.effect.Async
 import cats.implicits.*
+import scaladays.kafka.EventStorage
 import scaladays.models.*
 
 trait TTTServer[F[_]]:
@@ -12,8 +13,9 @@ trait TTTServer[F[_]]:
 
 object TTTServer:
 
-  def impl[F[_]: Async](): TTTServer[F] =
+  def impl[F[_]: Async](eventStorage: EventStorage[F]): TTTServer[F] =
     new TTTServer[F]:
 
       override def login(nickname: Nickname): F[PlayerId] =
+        // TODO - Use eventStorage
         PlayerId()

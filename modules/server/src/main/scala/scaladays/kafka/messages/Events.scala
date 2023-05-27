@@ -37,3 +37,7 @@ object Events:
     ) extends Event
 
   final case class RejectEvent(playerId: PlayerId, rejectEventId: EventId, reason: String) extends Event
+
+  final case class TTTEvent(time: Instant, event: Event)
+
+  final case class AggMessage[A, B](a: A, b: B)
