@@ -18,12 +18,11 @@ object Server:
       _ <- fs2.Stream.eval(KafkaSetup.impl(configService.config.kafka).bootTopics())
       backend = Backend.impl[F](configService.config, builder, configService.schemaRegistrySettings)
       ttt <- fs2.Stream.resource(backend.tttServer)
-      routes = WebServer.routes(ttt)
+      routes = (ws: WebSocketBuilder[F]) => HealthCheck.healthService <+> WebServer.routes(ws, ttt)
       stream        <- fs2.Stream.eval(
                          configService.httpServer
-                           .withHttpApp(
-                             CORS.policy.withAllowOriginAll.withAllowCredentials(false).apply(
-                               (HealthCheck.healthService <+> routes).orNotFound)
+                           .withHttpWebSocketApp(ws =>
+                             CORS.policy.withAllowOriginAll.withAllowCredentials(false).apply(routes(ws).orNotFound)
                            )
                            .build
                            .use(_ => Async[F].never[ExitCode])
