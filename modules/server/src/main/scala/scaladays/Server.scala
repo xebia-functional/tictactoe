@@ -16,6 +16,7 @@ object Server:
       configService <- fs2.Stream.eval(ConfigurationService.impl)
       stream        <- fs2.Stream.eval(
                          configService.httpServer
+                           // TODO - Add WebServer routes
                            .withHttpApp(HealthCheck.healthService.orNotFound)
                            .build
                            .use(_ => Async[F].never[ExitCode])
