@@ -19,6 +19,8 @@ import org.http4s.websocket.WebSocketFrame
 import fs2.Stream
 import org.typelevel.log4cats.Logger
 
+import scala.concurrent.duration.*
+
 object WebServer:
 
   def routes[F[_]: Async: Logger](
@@ -27,9 +29,12 @@ object WebServer:
     given EntityDecoder[F, Login]         = jsonOf[F, Login]
     given EntityEncoder[F, LoginResponse] = jsonEncoderOf[LoginResponse]
 
-    def processClientMessage(playerId: PlayerId, webSocketFrame: WebSocketFrame): F[Unit] = ???
+    def processClientMessage(playerId: PlayerId, webSocketFrame: WebSocketFrame): F[Unit] = webSocketFrame match
+      case WebSocketFrame.Text((str, _)) => Logger[F].info(s"Received $str for player $playerId")
+      case WebSocketFrame.Close(_)       => Logger[F].info(s"Close connection for player $playerId")
 
-    def sendResponse(playerId: PlayerId): fs2.Stream[F, WebSocketFrame] = ???
+    def sendResponse(playerId: PlayerId): fs2.Stream[F, WebSocketFrame] =
+      fs2.Stream.awakeEvery(500.millis).map(_ => WebSocketFrame.Text("pong"))
 
     val dsl = new Http4sDsl[F] {}
     import dsl.*
