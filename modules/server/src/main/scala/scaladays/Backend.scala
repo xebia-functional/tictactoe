@@ -17,12 +17,13 @@ trait Backend[F[_]]:
 object Backend:
 
   def impl[F[_]: Async: Logger](
-                                 configuration: Configuration,
-                                 schemaRegistrySettings: AvroSettings[F]): Backend[F] =
+      configuration: Configuration,
+      builder: StreamsBuilder,
+      schemaRegistrySettings: AvroSettings[F]): Backend[F] =
     new Backend[F]:
 
       lazy val kafkaFacade: Resource[F, KafkaFacade[F]] =
-        KafkaFacade.impl(configuration.kafka, schemaRegistrySettings)
+        KafkaFacade.impl(configuration.kafka, builder, schemaRegistrySettings)
 
       override lazy val tttServer: Resource[F, TTTServer[F]] =
-        kafkaFacade.map(kFacade => TTTServer.impl(kFacade.eventStorage))
+        kafkaFacade.map(kFacade => TTTServer.impl(kFacade.eventStorage, kFacade.loginStorage))

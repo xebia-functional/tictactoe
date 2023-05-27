@@ -2,7 +2,9 @@ package scaladays.models
 
 import scaladays.models.ids.Nickname
 
-final case class Model[F[_]](nickname: Nickname)
+final case class Model[F[_]](
+    nickname: Nickname
+  )
 
 object Model:
 
