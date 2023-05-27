@@ -20,10 +20,12 @@ import org.typelevel.log4cats.Logger
 object WebServer:
 
   def routes[F[_]: Async: Logger](ticTacToe: TTTServer[F]): HttpRoutes[F] =
-    given EntityDecoder[F, Login]         = ???
-    given EntityEncoder[F, LoginResponse] = ???
+    given EntityDecoder[F, Login]         = jsonOf[F, Login]
+    given EntityEncoder[F, LoginResponse] = jsonEncoderOf[LoginResponse]
 
-    // TODO
-    // Endpoint PATCH Root / "login" 
-    // Request Login
-    // Response LoginResponse using TTTServer
+    val dsl = new Http4sDsl[F] {}
+    import dsl.*
+    HttpRoutes.of[F] {
+      case req @ PATCH -> Root / "login" =>
+        req.as[Login].flatMap(loginReq => ticTacToe.login(loginReq.nickname)).flatMap(pId => Ok(LoginResponse(pId)))
+    }
