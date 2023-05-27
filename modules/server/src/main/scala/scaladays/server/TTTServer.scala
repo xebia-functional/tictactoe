@@ -17,5 +17,7 @@ object TTTServer:
     new TTTServer[F]:
 
       override def login(nickname: Nickname): F[PlayerId] =
-        // TODO - Use eventStorage
-        PlayerId()
+        for
+          _ <- eventStorage.login(nickname)
+          pId <- PlayerId()
+        yield pId
