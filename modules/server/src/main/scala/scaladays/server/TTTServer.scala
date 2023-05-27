@@ -12,6 +12,8 @@ trait TTTServer[F[_]]:
 
   def login(nickname: Nickname): F[PlayerId]
 
+  def response(playerId: PlayerId): fs2.Stream[F, Game]
+
 object TTTServer:
 
   def impl[F[_]: Async](
@@ -26,4 +28,8 @@ object TTTServer:
           pId      <- PlayerId()
           playerId <- loginStorage.upsertPlayer(pId, nickname)
         yield playerId
+
+      override def response(playerId: PlayerId): fs2.Stream[F, Game] =
+        eventHandler.processEvent(playerId)
+
 
