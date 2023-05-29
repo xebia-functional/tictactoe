@@ -48,6 +48,9 @@ object Update:
       case msg @ Msg.GameUpdate(g) =>
         (model.copy(contest = Contest.Registered(g)), Cmd.None)
 
+      case msg @ Msg.Restart =>
+        (model.copy(contest = Contest.Empty, ws = None, errors = Nil), model.ws.fold(Cmd.None)(scalaDaysClient.disconnectWebSocket))
+
       case msg @ Msg.RequestNewMovement(g, newMovement) =>
         val newGame = g.copy(state = GameState.Processing, movements = newMovement :: g.movements)
         val newModel = model.copy(contest = Contest.Registered(newGame))
@@ -59,3 +62,5 @@ object Update:
 
         (newModel, cmd)
 
+      case msg =>
+        (model, Logger.debug("Erm"))
