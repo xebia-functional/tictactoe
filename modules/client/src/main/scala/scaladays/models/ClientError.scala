@@ -7,3 +7,5 @@ final case class UnexpectedServerError(error: String) extends ClientError("There
 object NotFoundNickname extends ClientError("Server couldn't find the nickname")
 object InvalidNickname  extends ClientError("Invalid nickname")
 object UnknownError extends ClientError("Unexpected error: Please check the console to get more info")
+
+final case class WebSocketError(error: String) extends ClientError("There was an error in the websocket connection")

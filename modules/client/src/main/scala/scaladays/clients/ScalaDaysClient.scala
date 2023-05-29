@@ -2,7 +2,7 @@ package scaladays.clients
 
 import scaladays.models.http.{JoinGame, Login, LoginResponse, Turn}
 import scaladays.models.ids.{GameId, Nickname, PlayerId}
-import scaladays.models.{InvalidNickname, NotFoundNickname, UnexpectedServerError, *}
+import scaladays.models.{WebSocketMessage, *}
 import cats.effect.Async
 import cats.implicits.*
 import org.http4s.Method.PATCH
@@ -19,6 +19,8 @@ import io.circe.syntax.*
 trait ScalaDaysClient[F[_]]:
 
   def getLogin(nickname: Nickname): Cmd[F, Msg]
+
+  def connect(playerId: PlayerId): Cmd[F, Msg]
 
 object ScalaDaysClient:
 
@@ -44,6 +46,6 @@ object ScalaDaysClient:
             )
             .map {
               case Some(LoginResponse(playerId)) => Msg.LoginSuccess(playerId)
-              case None => Msg.LoginError(NotFoundNickname)
+              case None                          => Msg.LoginError(NotFoundNickname)
             }.recover(err => Msg.LoginError(UnexpectedServerError(err.getMessage)))
       )(identity)
