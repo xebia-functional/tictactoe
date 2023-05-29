@@ -15,6 +15,12 @@ object WebSocketMessage:
 
     case ConnectionError(error: ClientError)
 
+    case Nop
+
+    case Disconnecting
+
+    case Disconnected
+
     def asMsg: Msg = Msg.WebSocketStatus(this)
 
 enum Msg:
