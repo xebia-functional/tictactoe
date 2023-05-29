@@ -6,7 +6,7 @@ import scaladays.models.http.*
 import scaladays.models.ids.*
 import cats.effect.Async
 import cats.implicits.*
-import scaladays.models.*
+import scaladays.models.{Game, Piece, Position}
 
 trait TTTServer[F[_]]:
 
@@ -38,4 +38,11 @@ object TTTServer:
         clientAction match
           case JoinGame(playerId)                      =>
             eventStorage.waitForMatch(playerId).void
-
+          case Turn(playerId, gameId, piece, position) =>
+            eventStorage
+              .turnGame(
+                gameId,
+                playerId,
+                Position(position.x, position.y),
+                piece
+              ).void
