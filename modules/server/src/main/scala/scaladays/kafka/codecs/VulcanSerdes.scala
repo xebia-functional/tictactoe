@@ -22,18 +22,22 @@ import scala.reflect.ClassTag
 
 final case class VulcanSerdes(
     eventIdKey: KeySerde[EventId],
+    gameIdKey: KeySerde[GameId],
     nicknameKey: KeySerde[Nickname],
     playerIdKey: KeySerde[PlayerId],
     stringKey: KeySerde[String],
     tttEventValue: ValueSerde[TTTEvent],
+    gameValue: ValueSerde[Game],
     playerIdValue: ValueSerde[PlayerId]
   ):
 
   given KeySerde[EventId]                         = eventIdKey
+  given KeySerde[GameId]                          = gameIdKey
   given KeySerde[Nickname]                        = nicknameKey
   given KeySerde[PlayerId]                        = playerIdKey
   given KeySerde[String]                          = stringKey
   given ValueSerde[TTTEvent]                      = tttEventValue
+  given ValueSerde[Game]                          = gameValue
   given ValueSerde[PlayerId]                      = playerIdValue
 
 object VulcanSerdes:
@@ -81,9 +85,11 @@ object VulcanSerdes:
   def build[F[_]: Async](avroSettings: AvroSettings[F], dispatcher: Dispatcher[F]): F[VulcanSerdes] =
     (
       serdeKey[F, EventId](avroSettings, dispatcher),
+      serdeKey[F, GameId](avroSettings, dispatcher),
       serdeKey[F, Nickname](avroSettings, dispatcher),
       serdeKey[F, PlayerId](avroSettings, dispatcher),
       serdeKey[F, String](avroSettings, dispatcher),
       serdeValue[F, TTTEvent](avroSettings, dispatcher),
+      serdeValue[F, Game](avroSettings, dispatcher),
       serdeValue[F, PlayerId](avroSettings, dispatcher)
     ).mapN(VulcanSerdes.apply)
