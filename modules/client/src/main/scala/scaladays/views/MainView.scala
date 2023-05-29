@@ -17,9 +17,6 @@ object MainView:
   def errorMainScreen(nickname: Nickname, errors: List[ClientError]): Html[Msg] =
     div(welcome(nickname) ++ alert(errors))
 
-  def readyScreen(nickname: Nickname): Html[Msg] =
-    div(ready(nickname))
-
   def errorScreen[F[_]](model: Model[F]): Html[Msg] =
     println(model)
     div(alert(List(UnknownError)))
@@ -53,16 +50,6 @@ object MainView:
           button(tpe := "button", cls := "btn btn-primary btn-lg px-4 gap-3", onClick(Msg.LoginRequest(nickname)))(
             "Login"
           )
-      )
-    )
-
-  private def ready(nickname: Nickname): List[Elem[Msg]] =
-    List(
-      p(cls := "lead mb-4")(s"Hi $nickname. Are you ready to play"),
-      div(cls := "d-grid gap-2 d-sm-flex justify-content-sm-center")(
-        button(tpe := "button", cls := "btn btn-primary btn-lg px-4 gap-3", disabled)(
-          "Join a game"
-        )
       )
     )
 

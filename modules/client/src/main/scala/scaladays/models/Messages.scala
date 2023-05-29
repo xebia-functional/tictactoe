@@ -9,9 +9,13 @@ object WebSocketMessage:
 
   enum WebSocketStatus:
 
-    case REPLACE_ME
+    case Connecting(playerId: PlayerId)
 
-    def asMsg: Msg = ???
+    case Connected[F[_]: Async](ws: Option[WebSocket[F]])
+
+    case ConnectionError(error: ClientError)
+
+    def asMsg: Msg = Msg.WebSocketStatus(this)
 
 enum Msg:
 
@@ -24,3 +28,7 @@ enum Msg:
   case Logout
 
   case LoginError(error: ClientError)
+
+  case WebSocketStatus(status: WebSocketMessage.WebSocketStatus)
+
+  case GameUpdate(game: Game)
