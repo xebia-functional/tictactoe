@@ -38,3 +38,5 @@ enum Msg:
   case WebSocketStatus(status: WebSocketMessage.WebSocketStatus)
 
   case GameUpdate(game: Game)
+
+  case RequestNewMovement(game: Game, newMovement: Movement)

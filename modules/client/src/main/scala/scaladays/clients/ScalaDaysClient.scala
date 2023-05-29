@@ -24,6 +24,8 @@ trait ScalaDaysClient[F[_]]:
 
   def handleWebSocket(ws: WebSocket[F]): Sub[F, Msg]
 
+  def publishWs(playerId: PlayerId, gameId: GameId, movement: Movement, ws: WebSocket[F]): Cmd[F, Msg]
+
 object ScalaDaysClient:
 
   def impl[F[_]: Async](host: String, port: Int): ScalaDaysClient[F] = new ScalaDaysClient[F] with Http4sClientDsl[F]:
@@ -77,3 +79,7 @@ object ScalaDaysClient:
         case WebSocketEvent.Open             => WebSocketMessage.WebSocketStatus.Nop.asMsg
         case _                               => WebSocketMessage.WebSocketStatus.ConnectionError(WebSocketError("Unknown websocket message")).asMsg
       }
+
+    override def publishWs(playerId: PlayerId, gameId: GameId, movement: Movement, ws: WebSocket[F]): Cmd[F, Msg] =
+      val turn = Turn(playerId, gameId, movement.piece, movement.position)
+      ws.publish(turn.asJson.noSpacesSortKeys)
