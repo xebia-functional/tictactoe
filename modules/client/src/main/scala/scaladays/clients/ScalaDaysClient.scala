@@ -85,3 +85,6 @@ object ScalaDaysClient:
     override def publishWs(playerId: PlayerId, gameId: GameId, movement: Movement, ws: WebSocket[F]): Cmd[F, Msg] =
       val turn = Turn(playerId, gameId, movement.piece, movement.position)
       ws.publish(turn.asJson.noSpacesSortKeys)
+
+    override def disconnectWebSocket(ws: WebSocket[F]): Cmd[F, Msg] =
+      ws.disconnect
