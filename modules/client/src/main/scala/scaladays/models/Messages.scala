@@ -40,3 +40,5 @@ enum Msg:
   case GameUpdate(game: Game)
 
   case RequestNewMovement(game: Game, newMovement: Movement)
+
+  case Restart
