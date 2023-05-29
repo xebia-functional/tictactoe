@@ -44,3 +44,6 @@ object Update:
 
       case msg @ Msg.WebSocketStatus(WebSocketMessage.WebSocketStatus.Connected[F](ws)) =>
         (model.copy(ws = ws, contest = Contest.InProgress("Waiting for another player to join the game"), errors = Nil), Cmd.None)
+
+      case msg @ Msg.GameUpdate(g) =>
+        (model.copy(contest = Contest.Registered(g)), Cmd.None)

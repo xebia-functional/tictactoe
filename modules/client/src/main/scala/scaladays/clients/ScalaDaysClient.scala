@@ -65,3 +65,15 @@ object ScalaDaysClient:
         case WebSocketConnect.Socket(ws) =>
           WebSocketMessage.WebSocketStatus.Connected[F](Some(ws)).asMsg
       }
+
+    override def handleWebSocket(ws: WebSocket[F]): Sub[F, Msg] =
+      ws.subscribe {
+        case WebSocketEvent.Receive(message) =>
+          decode[Game](message).fold(
+            e => WebSocketMessage.WebSocketStatus.ConnectionError(WebSocketError(e.getMessage)).asMsg,
+            game => Msg.GameUpdate(game)
+          )
+        case WebSocketEvent.Heartbeat        => WebSocketMessage.WebSocketStatus.Nop.asMsg
+        case WebSocketEvent.Open             => WebSocketMessage.WebSocketStatus.Nop.asMsg
+        case _                               => WebSocketMessage.WebSocketStatus.ConnectionError(WebSocketError("Unknown websocket message")).asMsg
+      }
