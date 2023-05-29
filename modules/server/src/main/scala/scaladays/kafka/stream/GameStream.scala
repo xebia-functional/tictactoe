@@ -19,7 +19,14 @@ object GameStream:
     import instances.given
 
     def matchStream(): Unit =
-      // TODO
-      ???
+      builder
+        .stream[EventId, TTTEvent](kfg.topics.inputTopic)
+        .flatMap[GameId, Game] {
+          case (_, TTTEvent(_, StartGame(gameId, playerId1, playerId2))) =>
+            Some((gameId, Game.init(gameId, playerId1, playerId2)))
+          case _                                                         => None
+        }
+        .to(kfg.topics.gameTopic)
+
 
     matchStream() // StartMatch -> Match
