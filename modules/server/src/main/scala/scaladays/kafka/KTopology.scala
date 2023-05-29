@@ -10,7 +10,7 @@ import org.apache.kafka.streams.{KafkaStreams, StoreQueryParameters, StreamsConf
 import scaladays.kafka.codecs.Codecs.given
 import scaladays.kafka.codecs.VulcanSerdes
 import scaladays.kafka.messages.Events.{AggMessage, TTTEvent, TurnGame}
-import scaladays.kafka.stream.{LoginPlayerStream, WaitingPlayerStream}
+import scaladays.kafka.stream.{GameStream, LoginPlayerStream, WaitingPlayerStream}
 import scaladays.models.{Game, KafkaConfiguration}
 import scaladays.models.ids.{EventId, GameId, Nickname, PlayerId}
 
@@ -56,6 +56,7 @@ private[kafka] object KTopology:
         for
           _  <- Resource.pure(LoginPlayerStream.buildStream(kafkaConfiguration, builder, serdes))
           _  <- Resource.pure(WaitingPlayerStream.buildStream(kafkaConfiguration, builder, serdes))
+          _  <- Resource.pure(GameStream.buildStream(kafkaConfiguration, builder, serdes))
           ks <- kafkaStreams
           _  <- Resource.eval(Async[F].delay(ks.start()))
         yield ks
