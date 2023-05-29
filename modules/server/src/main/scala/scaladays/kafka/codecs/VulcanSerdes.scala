@@ -28,7 +28,8 @@ final case class VulcanSerdes(
     stringKey: KeySerde[String],
     tttEventValue: ValueSerde[TTTEvent],
     gameValue: ValueSerde[Game],
-    playerIdValue: ValueSerde[PlayerId]
+    playerIdValue: ValueSerde[PlayerId],
+    aggEventIdTurnGameValue: ValueSerde[AggMessage[EventId, TurnGame]]
   ):
 
   given KeySerde[EventId]                         = eventIdKey
@@ -39,6 +40,7 @@ final case class VulcanSerdes(
   given ValueSerde[TTTEvent]                      = tttEventValue
   given ValueSerde[Game]                          = gameValue
   given ValueSerde[PlayerId]                      = playerIdValue
+  given ValueSerde[AggMessage[EventId, TurnGame]] = aggEventIdTurnGameValue
 
 object VulcanSerdes:
 
@@ -91,5 +93,6 @@ object VulcanSerdes:
       serdeKey[F, String](avroSettings, dispatcher),
       serdeValue[F, TTTEvent](avroSettings, dispatcher),
       serdeValue[F, Game](avroSettings, dispatcher),
-      serdeValue[F, PlayerId](avroSettings, dispatcher)
+      serdeValue[F, PlayerId](avroSettings, dispatcher),
+      serdeValue[F, AggMessage[EventId, TurnGame]](avroSettings, dispatcher)
     ).mapN(VulcanSerdes.apply)
