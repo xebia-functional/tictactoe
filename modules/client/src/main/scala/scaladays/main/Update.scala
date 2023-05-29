@@ -7,6 +7,7 @@ import tyrian.Cmd
 import tyrian.cmds.Logger
 import cats.implicits.*
 import scaladays.models.ids.{GameId, PlayerId}
+import tyrian.websocket.WebSocket
 
 trait Update[F[_]]:
   def update(model: Model[F]): Msg => (Model[F], Cmd[F, Msg])
@@ -34,3 +35,12 @@ object Update:
 
       case msg @ Msg.Logout =>
         (Model.init, Cmd.None)
+
+      case msg @ Msg.WebSocketStatus(WebSocketMessage.WebSocketStatus.Connecting(playerId)) =>
+        (model.copy(contest = Contest.InProgress("Creating a new game")), scalaDaysClient.connect(playerId))
+
+      case msg @ Msg.WebSocketStatus(WebSocketMessage.WebSocketStatus.ConnectionError(error)) =>
+        (model.copy(contest = Contest.InProgress("Something went wrong"), errors = error :: model.errors), Logger.errorOnce(s"Websocket error: ${error.reason}"))
+
+      case msg @ Msg.WebSocketStatus(WebSocketMessage.WebSocketStatus.Connected[F](ws)) =>
+        (model.copy(ws = ws, contest = Contest.InProgress("Waiting for another player to join the game"), errors = Nil), Cmd.None)
