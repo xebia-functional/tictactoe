@@ -22,6 +22,8 @@ trait ScalaDaysClient[F[_]]:
 
   def connect(playerId: PlayerId): Cmd[F, Msg]
 
+  def handleWebSocket(ws: WebSocket[F]): Sub[F, Msg]
+
 object ScalaDaysClient:
 
   def impl[F[_]: Async](host: String, port: Int): ScalaDaysClient[F] = new ScalaDaysClient[F] with Http4sClientDsl[F]:

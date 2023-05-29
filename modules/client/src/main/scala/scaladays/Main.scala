@@ -4,7 +4,7 @@ import scala.scalajs.js.annotation.*
 import scaladays.clients.ScalaDaysClient
 import scaladays.models.*
 import scaladays.models.ids.{Nickname, PlayerId}
-import scaladays.views.{MainView, WaitingGameView}
+import scaladays.views.{GameView, MainView, WaitingGameView}
 import cats.effect.IO
 import cats.effect.IO.asyncForIO
 import cats.implicits.*
@@ -54,9 +54,12 @@ object Main extends TyrianApp[Msg, ModelIO]:
         WaitingGameView.waitingGameErrorScreen(m, errors)
 
       case Model(nickname, Player.Registered(playerId), Contest.Registered(game), _, _) =>
-        MainView.errorMainScreen(nickname, List(UnexpectedServerError("View not implemented")))
+        GameView.gameScreen(nickname, playerId, game)
 
       case model =>
         MainView.errorScreen(model)
 
-  def subscriptions(model: ModelIO): Sub[IO, Msg] = Sub.None
+  def subscriptions(model: ModelIO): Sub[IO, Msg] =
+    model.ws.fold(Sub.emit(Msg.WebSocketStatus(WebSocketMessage.WebSocketStatus.Disconnected)))(ws =>
+      scalaDaysClient.handleWebSocket(ws)
+    )
