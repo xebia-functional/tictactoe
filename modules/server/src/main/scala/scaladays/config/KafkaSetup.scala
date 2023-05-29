@@ -63,6 +63,13 @@ object KafkaSetup:
           _     <- createCompactedTopicUnless(
                      client,
                      names,
+                     kafkaConfiguration.topics.gameTopic,
+                     kafkaConfiguration.numPartitions,
+                     kafkaConfiguration.replicationFactor
+                   )
+          _     <- createCompactedTopicUnless(
+                     client,
+                     names,
                      kafkaConfiguration.topics.playerTopic,
                      kafkaConfiguration.numPartitions,
                      kafkaConfiguration.replicationFactor
