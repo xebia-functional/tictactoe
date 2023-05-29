@@ -47,3 +47,15 @@ object Update:
 
       case msg @ Msg.GameUpdate(g) =>
         (model.copy(contest = Contest.Registered(g)), Cmd.None)
+
+      case msg @ Msg.RequestNewMovement(g, newMovement) =>
+        val newGame = g.copy(state = GameState.Processing, movements = newMovement :: g.movements)
+        val newModel = model.copy(contest = Contest.Registered(newGame))
+        val cmd: Cmd[F, Msg] = (model.player, model.contest, model.ws) match
+          case (Player.Registered(playerId), Contest.Registered(game), Some(ws)) =>
+            scalaDaysClient.publishWs(playerId, game.gameId, newMovement, ws)
+          case _ =>
+            Cmd.None
+
+        (newModel, cmd)
+

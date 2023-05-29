@@ -79,3 +79,7 @@ object ScalaDaysClient:
         case WebSocketEvent.Open             => WebSocketMessage.WebSocketStatus.Nop.asMsg
         case _                               => WebSocketMessage.WebSocketStatus.ConnectionError(WebSocketError("Unknown websocket message")).asMsg
       }
+
+    override def publishWs(playerId: PlayerId, gameId: GameId, movement: Movement, ws: WebSocket[F]): Cmd[F, Msg] =
+      val turn = Turn(playerId, gameId, movement.piece, movement.position)
+      ws.publish(turn.asJson.noSpacesSortKeys)
