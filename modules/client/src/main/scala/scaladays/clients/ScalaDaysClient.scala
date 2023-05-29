@@ -49,3 +49,17 @@ object ScalaDaysClient:
               case None                          => Msg.LoginError(NotFoundNickname)
             }.recover(err => Msg.LoginError(UnexpectedServerError(err.getMessage)))
       )(identity)
+
+    override def connect(playerId: PlayerId): Cmd[F, Msg] =
+      val uri = wsUri / "player" / playerId.show / "join"
+      WebSocket.connect[F, Msg](
+        address = uri.renderString,
+        onOpenMessage = JoinGame(playerId).asJson.noSpacesSortKeys,
+        keepAliveSettings = KeepAliveSettings.default
+      ) {
+        case WebSocketConnect.Error(err) =>
+          WebSocketMessage.WebSocketStatus.ConnectionError(WebSocketError(err)).asMsg
+
+        case WebSocketConnect.Socket(ws) =>
+          WebSocketMessage.WebSocketStatus.Connected[F](Some(ws)).asMsg
+      }
