@@ -51,7 +51,7 @@ object GameView:
       if(List(GameState.CrossWin, GameState.CircleWin, GameState.Tie).contains(game.state)) then
         List(
           div(cls := "d-grid gap-2 mt-4 d-sm-flex justify-content-sm-center")(
-            button(tpe := "button", cls := "btn btn-primary btn-lg px-4 gap-3")("Restart")
+            button(tpe := "button", cls := "btn btn-primary btn-lg px-4 gap-3", onClick(Msg.Restart))("Restart")
           )
         )
       else List.empty[Html[Msg]]
