@@ -17,5 +17,6 @@ object Server:
       stream        <- fs2.Stream.eval(
                          // TODO - Use configService.httpServer to start an http app
                          // Find a way to keep the stream running
+                         ???
                        )
     yield stream
