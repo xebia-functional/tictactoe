@@ -36,9 +36,10 @@ object GameView:
 
     def CellView(position: Position) =
       val newMovement = Movement(position, myPiece, false)
+      val newMsg = Msg.RequestNewMovement(game, newMovement)
       game.movements
         .find(_.position == position).fold {
-          td(button(tpe := "button", cls := "btn btn-primary", MyTurnAtrr(myTurn)))
+          td(button(tpe := "button", cls := "btn btn-primary", MyTurnAtrr(myTurn), onClick(newMsg)))
         } { mov =>
           td(button(tpe := "button", cls := s"btn btn-primary done ${mov.piece.cssClass}", disabled) {
             if mov.confirmed then span(mov.piece.symbol)
